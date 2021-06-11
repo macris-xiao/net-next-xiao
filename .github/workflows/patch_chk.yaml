@@ -1,0 +1,65 @@
+name: check upstream patches
+
+on: [pull_request]
+
+env:
+  DOWNLOAD: ".download"
+  UNPACKED: ".unpacked"
+
+jobs:
+  patch_chk_job:
+    runs-on: ubuntu-latest
+    name: Patches Check
+    steps:
+    - name: Get PR info
+      id: 'get-pr-info'
+      uses: Brymastr/pr-info-action@v1
+
+    - name: Set env var
+      run: |
+        COMMIT_CNT=$((${{ steps.get-pr-info.outputs.commits }}+1))
+        echo "COMMIT_CNT=${COMMIT_CNT}" >> $GITHUB_ENV
+
+    - name: Install deps
+      run: |
+        sudo apt-get -q=2 install build-essential gcc-10 bc flex bison python libpython2.7 libelf-dev ocaml-findlib python3
+        pip3 install ply GitPython
+
+    - name: Check out repository
+      uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+        fetch-depth: ${{ env.COMMIT_CNT }}
+
+    - name: Download sparse
+      uses: ./.github/actions/download
+      with:
+        output-path: ${{ env.DOWNLOAD }}
+        url: "http://cn.archive.ubuntu.com/ubuntu/pool/universe/s/sparse"
+        accept: "sparse_0.6.3-2_amd64.deb"
+
+    - name: Download coccinelle
+      uses: ./.github/actions/download
+      with:
+        output-path: ${{ env.DOWNLOAD }}
+        url: "http://cn.archive.ubuntu.com/ubuntu/pool/universe/c/coccinelle"
+        accept: "coccinelle_1.0.8.deb-4_amd64.deb"
+
+    - name: Unpack sparse & coccinelle
+      uses: ./.github/actions/unpack-deb
+      with:
+        input-path: ${{ env.DOWNLOAD }}
+        output-path: ${{ env.UNPACKED }}
+
+    - name: Configure & Build Kernel
+      run: |
+        cp -p .github/deps/local_defconfig ./arch/x86/configs/
+        make -s local_defconfig
+        make -s -j"$(nproc)"
+
+    - name: Run check scripts
+      run: |
+        cp -p .github/deps/commits_check.sh ./
+        cp -p .github/deps/xmastree.py ./
+        export PATH=$PATH:`pwd`/${{ env.UNPACKED }}/usr/bin
+        ./commits_check.sh ${{ steps.get-pr-info.outputs.commits }}
