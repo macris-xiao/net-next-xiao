@@ -8,6 +8,7 @@ if [ -z "$1" ]; then
 fi
 
 exp_ccount=1
+exp_scount=0
 module=drivers/net/ethernet/netronome/nfp
 
 for commit in $(git log --oneline --no-color -$1 --reverse | cut -d ' ' -f 1); do
@@ -45,7 +46,22 @@ for commit in $(git log --oneline --no-color -$1 --reverse | cut -d ' ' -f 1); d
 
     echo
     echo "----------- Sparse check -------------"
-    make -j"$(nproc)" M="$module" C=2 CF=-D__CHECK_ENDIAN__ > /dev/null
+
+    set +e
+    make -j"$(nproc)" M="$module" C=2 CF=-D__CHECK_ENDIAN__ >& .sparse.log
+    ERROR="$?"
+    set -e
+    if [ "$ERROR" != "0" ]; then
+        cat .sparse.log
+        exit "$ERROR"
+    fi
+
+    scount=$(grep "\(arning:\|rror:\)" .sparse.log | wc -l)
+    if [ $scount -gt $exp_scount ]; then
+        echo "new sparse found! (expected:$exp_scount got:$scount)"
+        cat .sparse.log
+        exit 1
+    fi
     echo "Done"
 
     echo
