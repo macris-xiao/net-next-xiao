@@ -42,9 +42,13 @@ for commit in $(git log --oneline --no-color -$1 --reverse | cut -d ' ' -f 1); d
     [ "$ERROR" == 0 -o "$ERROR" == 1 ] || exit "$ERROR"
     set -e
 
-    echo $files
-    # Run doc string checker on the files in the commit
-    ./scripts/kernel-doc -Werror -none $files
+    if [ "$ERROR" == 1 ]; then
+        echo " No C files found, skipping...."
+    else
+        echo $files
+        # Run doc string checker on the files in the commit
+        ./scripts/kernel-doc -Werror -none $files
+    fi
 
     echo
     echo "----------- Reverse xmas tree check ------------"
