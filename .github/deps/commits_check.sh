@@ -30,10 +30,18 @@ for commit in $(git log --oneline --no-color -$1 --reverse | cut -d ' ' -f 1); d
     echo "----------- Checkpatch ---------------"
     ./scripts/checkpatch.pl --strict -g $commit --ignore FILE_PATH_CHANGES
 
-    # This gets all .c/.h files touched by the commit
-    files=$(git show --name-only --oneline --no-merges $commit | grep -E '(*\.h|*\.c)')
     echo
     echo "----------- Doc string check ---------"
+    # This gets all .c/.h files touched by the commit
+    set +e
+    files=$(git show --name-only --oneline --no-merges $commit | grep -E '(*\.h|*\.c)')
+    ERROR="$?"
+    # Grep will exit with 0 if a match is found, 1 if no match is found,
+    # and 2 if an error is encountered. 0 and 1 are non-error states for
+    # this script, so treat them accordingly
+    [ "$ERROR" == 0 -o "$ERROR" == 1 ] || exit "$ERROR"
+    set -e
+
     echo $files
     # Run doc string checker on the files in the commit
     ./scripts/kernel-doc -Werror -none $files
