@@ -23,7 +23,19 @@ jobs:
 
     - name: Install deps
       run: |
-        sudo apt-get -q=2 install build-essential gcc-10 bc flex bison python libpython2.7 libelf-dev ocaml-findlib python3
+        sudo apt-get -q=2 install \
+          bc \
+          bison \
+          build-essential \
+          flex \
+          gcc-10 \
+          libelf-dev \
+          libpython2.7 \
+          libsqlite3-dev \
+          libssl-dev \
+          ocaml-findlib \
+          python \
+          python3
         pip3 install ply GitPython
 
     - name: Check out repository
@@ -51,6 +63,11 @@ jobs:
       with:
         input-path: ${{ env.DOWNLOAD }}
         output-path: ${{ env.UNPACKED }}
+
+    - name: Checkout and Build Smatch
+      run: |
+        git clone --quiet --branch 1.72 --depth 1 git://repo.or.cz/smatch.git
+        make -C ./smatch
 
     - name: Configure & Build Kernel
       run: |
