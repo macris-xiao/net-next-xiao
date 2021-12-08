@@ -57,6 +57,28 @@ for commit in $(git log --oneline --no-color -$1 --reverse | cut -d ' ' -f 1); d
     rm "$PATCH_FILE"
 
     echo
+    echo "----------- Smatch check ------------"
+
+    # This gets all .c files touched by the commit
+    # N.B. This is not safe in the case where filenames include newlines
+    readarray -t files < <( git show --name-only --oneline --no-merges $commit | grep '\.c$')
+
+    for file in "${files[@]}"; do
+        echo
+        echo "----------- Check ($file) ---------"
+        # Run doc string checker on the files in the commit
+        ./smatch/smatch_scripts/kchecker --spammy "$file" >& .smatch.log
+        exp_scount=0
+        scount=$(grep "\(warning:\|warn:\|error:\)" .smatch.log | wc -l)
+
+        if [ "$scount" != "$exp_scount" ]; then
+            echo "new smatch found! (expected:$exp_scount got:$scount)"
+            cat .smatch.log
+            exit 1
+        fi
+    done
+
+    echo
     echo "----------- Sparse check -------------"
 
     set +e
