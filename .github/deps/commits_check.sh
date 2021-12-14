@@ -24,8 +24,23 @@ for commit in $(git log --oneline --no-color -$1 --reverse | cut -d ' ' -f 1); d
 
     echo "----------- Compile check ------------"
     make -j"$(nproc)" M="$module" clean
-    make -j"$(nproc)" EXTRA_CFLAGS+="-Werror -Wmaybe-uninitialized" \
-        M="$module" > /dev/null
+
+    for i in 1 2; do
+        set +e
+        make -s -j"$(nproc)" EXTRA_CFLAGS+="-Werror -Wmaybe-uninitialized" \
+		M="$module" >& .build.log
+        ERROR="$?"
+        set -e
+        [ "$ERROR" != "0" ] || break
+        if [ "$i" != "1" ] || ! grep -q "ERROR: modpost: .* undefined" .build.log; then
+            cat .build.log
+            exit "$ERROR"
+        fi
+        # Rebuild entire kernel to refresh symbols
+        echo "--------------- Rebuild kernel -----------------"
+        make -s -j"$(nproc)"
+        echo "-------- Retry compile check ($target) ---------"
+    done
 
     echo "----------- Checkpatch ---------------"
     ./scripts/checkpatch.pl --strict -g $commit --ignore FILE_PATH_CHANGES
