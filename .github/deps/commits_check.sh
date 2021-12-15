@@ -7,7 +7,6 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-export CC=gcc-10
 exp_ccount=1
 module=drivers/net/ethernet/netronome/nfp
 
@@ -23,8 +22,9 @@ for commit in $(git log --oneline --no-color -$1 --reverse | cut -d ' ' -f 1); d
     fi
 
     echo "----------- Compile check ------------"
-    make -j"$(nproc)" CC="$CC" M="$module" clean
-    make -j"$(nproc)" EXTRA_CFLAGS+="-Werror -Wmaybe-uninitialized" CC="$CC" M="$module" > /dev/null
+    make -j"$(nproc)" M="$module" clean
+    make -j"$(nproc)" EXTRA_CFLAGS+="-Werror -Wmaybe-uninitialized" \
+        M="$module" > /dev/null
 
     echo "----------- Checkpatch ---------------"
     ./scripts/checkpatch.pl --strict -g $commit --ignore FILE_PATH_CHANGES
@@ -45,14 +45,15 @@ for commit in $(git log --oneline --no-color -$1 --reverse | cut -d ' ' -f 1); d
 
     echo
     echo "----------- Sparse check -------------"
-    make -j"$(nproc)" CC="$CC" M="$module" C=2 CF=-D__CHECK_ENDIAN__ > /dev/null
+    make -j"$(nproc)" M="$module" C=2 CF=-D__CHECK_ENDIAN__ > /dev/null
     echo "Done"
 
     echo
     echo "----------- Cocci check --------------"
     rm -f .cocci.log
     [ ! -e ./cocci-debug.log ] || rm ./cocci-debug.log
-    make -j"$(nproc)" CC="$CC" M="$module" coccicheck --quiet MODE=report DEBUG_FILE=cocci-debug.log > .cocci.log
+    make -j"$(nproc)" M="$module" coccicheck --quiet MODE=report \
+        DEBUG_FILE=cocci-debug.log > .cocci.log
     ccount=$(cat .cocci.log | grep "on line" | wc -l)
     if [ $ccount -gt $exp_ccount ]; then
         echo "new coccinelle found!"
