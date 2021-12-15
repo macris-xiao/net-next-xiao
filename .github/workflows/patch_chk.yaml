@@ -4,6 +4,7 @@ on: [pull_request]
 
 env:
   DOWNLOAD: ".download"
+  MAKEFLAGS: "CC=gcc-10"
   UNPACKED: ".unpacked"
 
 jobs:
