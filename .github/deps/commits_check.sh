@@ -117,11 +117,27 @@ for commit in $(git log --oneline --no-color -$1 --reverse | cut -d ' ' -f 1); d
     echo "----------- Cocci check --------------"
     rm -f .cocci.log
     [ ! -e ./cocci-debug.log ] || rm ./cocci-debug.log
+    set +e
     make -j"$(nproc)" M="$module" coccicheck --quiet MODE=report \
-        DEBUG_FILE=cocci-debug.log > .cocci.log
+        DEBUG_FILE=cocci-debug.log >& .cocci.log
+    ERROR="$?"
+    set -e
+    if [ "$ERROR" -ne 0 ]; then
+        cat .cocci.log
+        if [ -e cocci-debug.log ]; then
+            echo "--- debug file ---"
+            cat cocci-debug.log
+        fi
+        exit "$ERROR"
+    fi
     ccount=$(cat .cocci.log | grep "on line" | wc -l)
     if [ $ccount -gt $exp_ccount ]; then
         echo "new coccinelle found!"
+        grep "on line" .cocci.log
+        if [ -e cocci-debug.log ]; then
+            echo "--- debug file ---"
+            cat cocci-debug.log
+        fi
         exit 1
     fi
     echo "Done"
