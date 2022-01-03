@@ -21,21 +21,26 @@ jobs:
         COMMIT_CNT=$((${{ steps.get-pr-info.outputs.commits }}+1))
         echo "COMMIT_CNT=${COMMIT_CNT}" >> $GITHUB_ENV
 
+    - name: Add Coccinelle Focal PPA
+      run: |
+        sudo apt-get -q=2 install software-properties-common
+        sudo add-apt-repository ppa:npalix/coccinelle
+        sudo apt-get update
+
     - name: Install deps
       run: |
         sudo apt-get -q=2 install \
           bc \
           bison \
           build-essential \
+          coccinelle \
           flex \
           gcc-10 \
           libelf-dev \
           libpython2.7 \
           libsqlite3-dev \
           libssl-dev \
-          ocaml-findlib \
-          python \
-          python3
+          python
         pip3 install ply GitPython
 
     - name: Check out repository
@@ -51,14 +56,7 @@ jobs:
         url: "http://cn.archive.ubuntu.com/ubuntu/pool/universe/s/sparse"
         accept: "sparse_0.6.3-2_amd64.deb"
 
-    - name: Download coccinelle
-      uses: ./.github/actions/download
-      with:
-        output-path: ${{ env.DOWNLOAD }}
-        url: "http://cn.archive.ubuntu.com/ubuntu/pool/universe/c/coccinelle"
-        accept: "coccinelle_1.0.8.deb-4_amd64.deb"
-
-    - name: Unpack sparse & coccinelle
+    - name: Unpack sparse
       uses: ./.github/actions/unpack-deb
       with:
         input-path: ${{ env.DOWNLOAD }}
