@@ -83,11 +83,29 @@ for commit in $(git log --oneline --no-color -$1 --reverse | cut -d ' ' -f 1); d
         echo "----------- Check ($file) ---------"
         # Run doc string checker on the files in the commit
         ./smatch/smatch_scripts/kchecker --spammy "$file" >& .smatch.log
-        exp_scount=0
-        scount=$(grep "\(warning:\|warn:\|error:\)" .smatch.log | wc -l)
+        smatch_count=$(grep "\(warning:\|warn:\|error:\)" .smatch.log | wc -l)
 
-        if [ "$scount" != "$exp_scount" ]; then
-            echo "new smatch found! (expected:$exp_scount got:$scount)"
+        case $file in
+        drivers/net/ethernet/netronome/nfp/abm/ctrl.c) ;&
+        drivers/net/ethernet/netronome/nfp/abm/qdisc.c) ;&
+        drivers/net/ethernet/netronome/nfp/ccm_mbox.c) ;&
+        drivers/net/ethernet/netronome/nfp/crypto/tls.c) ;&
+        drivers/net/ethernet/netronome/nfp/nfp_net_common.c) ;&
+        drivers/net/ethernet/netronome/nfp/nfp_net_sriov.c) ;&
+        drivers/net/ethernet/netronome/nfp/nfpcore/nfp_cppcore.c)
+                exp_smatch_count=1 ;;
+        drivers/net/ethernet/netronome/nfp/bpf/jit.c) ;&
+        drivers/net/ethernet/netronome/nfp/flower/offload.c)
+                exp_smatch_count=2 ;;
+        drivers/net/ethernet/netronome/nfp/devlink_param.c) ;&
+        drivers/net/ethernet/netronome/nfp/nfp_main.c)
+                exp_smatch_count=3 ;;
+        *)
+                exp_smatch_count=0 ;;
+        esac
+
+        if [ "$smatch_count" != "$exp_smatch_count" ]; then
+            echo "new smatch found! (expected:$exp_smatch_count got:$smatch_count)"
             cat .smatch.log
             exit 1
         fi
