@@ -81,8 +81,18 @@ for commit in $(git log --oneline --no-color -$1 --reverse | cut -d ' ' -f 1); d
     for file in "${files[@]}"; do
         echo
         echo "----------- Check ($file) ---------"
-        # Run doc string checker on the files in the commit
+
         ./smatch/smatch_scripts/kchecker --spammy "$file" >& .smatch.log
+
+        set +e
+        ./smatch/smatch_scripts/kchecker --spammy "$file" >& .smatch.log
+        ERROR="$?"
+        set -e
+        if [ "$ERROR" -ne 0 ]; then
+            cat .smatch.log
+            exit "$ERROR"
+        fi
+
         smatch_count=$(grep "\(warning:\|warn:\|error:\)" .smatch.log | wc -l)
 
         case $file in
