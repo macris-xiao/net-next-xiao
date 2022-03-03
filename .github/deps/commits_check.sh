@@ -82,8 +82,6 @@ for commit in $(git log --oneline --no-color -$1 --reverse | cut -d ' ' -f 1); d
         echo
         echo "----------- Check ($file) ---------"
 
-        ./smatch/smatch_scripts/kchecker --spammy "$file" >& .smatch.log
-
         set +e
         ./smatch/smatch_scripts/kchecker --spammy "$file" >& .smatch.log
         ERROR="$?"
