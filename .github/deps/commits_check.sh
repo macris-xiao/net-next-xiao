@@ -82,6 +82,16 @@ for commit in $(git log --oneline --no-color -$1 --reverse | cut -d ' ' -f 1); d
         echo
         echo "----------- Check ($file) ---------"
 
+        # If the change touches nfp_net_debugfs.c but CONFIG_NFP_DEBUG is not
+        # set in the configuration file smatch will exit with an error as there
+        # is no rule to build nfp_net_debugfs.o
+        if [[ "$file" == "drivers/net/ethernet/netronome/nfp/nfp_net_debugfs.c" ]]; then
+            if ! grep -q "CONFIG_NFP_DEBUG=y" .config; then
+                echo "Skip as CONFIG_NFP_DEBUG not set in .config"
+                continue
+            fi
+        fi
+
         set +e
         ./smatch/smatch_scripts/kchecker --spammy "$file" >& .smatch.log
         ERROR="$?"
