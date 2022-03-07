@@ -195,6 +195,14 @@ for commit in $(git log --oneline --no-color -$ncommits --reverse | cut -d ' ' -
                 cat cocci-debug.log
             fi
         fi
+
+        # Check for specific class(es) of coccicheck warnings.
+        # TODO: All warnings should be fixed and this step shall fail if any warning
+        #       is generated not just for specific patterns.
+        if grep -q "WARNING avoid newline at end of message in NL_SET_ERR_MSG_MOD$" .cocci.log; then
+            commit_status_set_fail "coccicheck found error class 'newline at end of message in NL_SET_ERR_MSG_MOD'"
+            cat .cocci.log
+        fi
     fi
     echo "Done"
 
