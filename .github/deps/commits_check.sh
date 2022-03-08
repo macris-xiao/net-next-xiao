@@ -7,11 +7,26 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
+readonly ncommits=$1
+
 exp_ccount=1
 exp_scount=0
 module=drivers/net/ethernet/netronome/nfp
 
-for commit in $(git log --oneline --no-color -$1 --reverse | cut -d ' ' -f 1); do
+# If a commit message contains a Fixes tag or mentions a different commit the
+# strict mode of checkpatch.pl will check the tree to make sure that commit
+# exits, as our worktree is shallow this check will fail.
+#
+# To prevent checkpatch.pl from failing transform the shallow worktree to a full
+# tree if a commit in the range will trigger this checkpatch.pl check.
+#
+# NOTE: This is an expensive operation and should only be trigger if needed.
+if grep -qiP "^fixes:|\bcommit\s+[0-9a-f]{6,40}\b" <<< $(git log -$ncommits --pretty=%B HEAD); then
+    echo "Check of commit(s) will requier access to the full git tree, fetch the full tree"
+    git fetch --quiet --unshallow
+fi
+
+for commit in $(git log --oneline --no-color -$ncommits --reverse | cut -d ' ' -f 1); do
     echo "============== Checking $commit ========================"
 
     git checkout $commit
