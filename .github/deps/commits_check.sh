@@ -2,6 +2,20 @@
 
 set -e
 
+commit_status_init() {
+    COMMIT_STATUS_FAIL=0
+}
+
+commit_status_set_fail() {
+    local reason=$1
+    echo "Failed: $reason"
+    COMMIT_STATUS_FAIL=1
+}
+
+commit_status_get() {
+    echo $COMMIT_STATUS_FAIL
+}
+
 if [ -z "$1" ]; then
     echo "Please specify commit count."
     exit 1
@@ -28,6 +42,7 @@ fi
 
 for commit in $(git log --oneline --no-color -$ncommits --reverse | cut -d ' ' -f 1); do
     echo "============== Checking $commit ========================"
+    commit_status_init
 
     git checkout $commit
 
@@ -58,7 +73,9 @@ for commit in $(git log --oneline --no-color -$ncommits --reverse | cut -d ' ' -
     done
 
     echo "----------- Checkpatch ---------------"
-    ./scripts/checkpatch.pl --strict -g $commit --ignore FILE_PATH_CHANGES
+    if ! ./scripts/checkpatch.pl --strict -g $commit --ignore FILE_PATH_CHANGES; then
+        commit_status_set_fail "checkpatch.pl exited with non-zero return code"
+    fi
 
     echo
     echo "----------- Doc string check ---------"
@@ -77,13 +94,17 @@ for commit in $(git log --oneline --no-color -$ncommits --reverse | cut -d ' ' -
     else
         echo $files
         # Run doc string checker on the files in the commit
-        ./scripts/kernel-doc -Werror -none $files
+        if ! ./scripts/kernel-doc -Werror -none $files; then
+            commit_status_set_fail "kernel-doc exited with non-zero return code"
+        fi
     fi
 
     echo
     echo "----------- Reverse xmas tree check ------------"
     PATCH_FILE=$(git format-patch -1 $commit)
-    ./xmastree.py "$PATCH_FILE"
+    if ! ./xmastree.py "$PATCH_FILE"; then
+        commit_status_set_fail "xmastree.py exited with non-zero return code"
+    fi
     rm "$PATCH_FILE"
 
     echo
@@ -107,91 +128,85 @@ for commit in $(git log --oneline --no-color -$ncommits --reverse | cut -d ' ' -
             fi
         fi
 
-        set +e
-        ./smatch/smatch_scripts/kchecker --spammy "$file" >& .smatch.log
-        ERROR="$?"
-        set -e
-        if [ "$ERROR" -ne 0 ]; then
+        if ! ./smatch/smatch_scripts/kchecker --spammy "$file" >& .smatch.log; then
+            commit_status_set_fail "kchekcer for $file exited with non-zero return code"
             cat .smatch.log
-            exit "$ERROR"
-        fi
+        else
+            smatch_count=$(grep "\(warning:\|warn:\|error:\)" .smatch.log | wc -l)
+            case $file in
+                drivers/net/ethernet/netronome/nfp/abm/ctrl.c) ;&
+                drivers/net/ethernet/netronome/nfp/abm/qdisc.c) ;&
+                drivers/net/ethernet/netronome/nfp/ccm_mbox.c) ;&
+                drivers/net/ethernet/netronome/nfp/crypto/tls.c) ;&
+                drivers/net/ethernet/netronome/nfp/nfp_net_common.c) ;&
+                drivers/net/ethernet/netronome/nfp/nfp_net_sriov.c) ;&
+                drivers/net/ethernet/netronome/nfp/nfpcore/nfp_cppcore.c)
+                    exp_smatch_count=1 ;;
+                drivers/net/ethernet/netronome/nfp/bpf/jit.c) ;&
+                drivers/net/ethernet/netronome/nfp/flower/offload.c)
+                    exp_smatch_count=2 ;;
+                drivers/net/ethernet/netronome/nfp/devlink_param.c) ;&
+                drivers/net/ethernet/netronome/nfp/nfp_main.c)
+                    exp_smatch_count=3 ;;
+                *)
+                    exp_smatch_count=0 ;;
+            esac
 
-        smatch_count=$(grep "\(warning:\|warn:\|error:\)" .smatch.log | wc -l)
-
-        case $file in
-        drivers/net/ethernet/netronome/nfp/abm/ctrl.c) ;&
-        drivers/net/ethernet/netronome/nfp/abm/qdisc.c) ;&
-        drivers/net/ethernet/netronome/nfp/ccm_mbox.c) ;&
-        drivers/net/ethernet/netronome/nfp/crypto/tls.c) ;&
-        drivers/net/ethernet/netronome/nfp/nfp_net_common.c) ;&
-        drivers/net/ethernet/netronome/nfp/nfp_net_sriov.c) ;&
-        drivers/net/ethernet/netronome/nfp/nfpcore/nfp_cppcore.c)
-                exp_smatch_count=1 ;;
-        drivers/net/ethernet/netronome/nfp/bpf/jit.c) ;&
-        drivers/net/ethernet/netronome/nfp/flower/offload.c)
-                exp_smatch_count=2 ;;
-        drivers/net/ethernet/netronome/nfp/devlink_param.c) ;&
-        drivers/net/ethernet/netronome/nfp/nfp_main.c)
-                exp_smatch_count=3 ;;
-        *)
-                exp_smatch_count=0 ;;
-        esac
-
-        if [ "$smatch_count" != "$exp_smatch_count" ]; then
-            echo "new smatch found! (expected:$exp_smatch_count got:$smatch_count)"
-            cat .smatch.log
-            exit 1
+            if [ "$smatch_count" != "$exp_smatch_count" ]; then
+                commit_status_set_fail "new smatch found! (expected:$exp_smatch_count got:$smatch_count)"
+                cat .smatch.log
+            fi
         fi
     done
 
     echo
     echo "----------- Sparse check -------------"
 
-    set +e
-    make -j"$(nproc)" M="$module" C=2 CF=-D__CHECK_ENDIAN__ >& .sparse.log
-    ERROR="$?"
-    set -e
-    if [ "$ERROR" != "0" ]; then
+    if ! make -j"$(nproc)" M="$module" C=2 CF=-D__CHECK_ENDIAN__ >& .sparse.log; then
+        commit_status_set_fail "Sparse exited with non-zero return code"
         cat .sparse.log
-        exit "$ERROR"
-    fi
-
-    scount=$(grep "\(arning:\|rror:\)" .sparse.log | wc -l)
-    if [ $scount -gt $exp_scount ]; then
-        echo "new sparse found! (expected:$exp_scount got:$scount)"
-        cat .sparse.log
-        exit 1
+    else
+        scount=$(grep "\(arning:\|rror:\)" .sparse.log | wc -l)
+        if [ $scount -gt $exp_scount ]; then
+            commit_status_set_fail "new sparse found! (expected:$exp_scount got:$scount)"
+            cat .sparse.log
+        fi
     fi
     echo "Done"
 
     echo
     echo "----------- Cocci check --------------"
-    rm -f .cocci.log
-    [ ! -e ./cocci-debug.log ] || rm ./cocci-debug.log
-    set +e
-    make -j"$(nproc)" M="$module" coccicheck --quiet MODE=report \
-        DEBUG_FILE=cocci-debug.log >& .cocci.log
-    ERROR="$?"
-    set -e
-    if [ "$ERROR" -ne 0 ]; then
+    rm -f .cocci.log cocci-debug.log
+
+    if ! make -j"$(nproc)" M="$module" coccicheck --quiet MODE=report DEBUG_FILE=cocci-debug.log >& .cocci.log; then
+        commit_status_set_fail "coccicheck exited with non-zero return code"
         cat .cocci.log
         if [ -e cocci-debug.log ]; then
             echo "--- debug file ---"
             cat cocci-debug.log
         fi
-        exit "$ERROR"
-    fi
-    ccount=$(cat .cocci.log | grep "on line" | wc -l)
-    if [ $ccount -gt $exp_ccount ]; then
-        echo "new coccinelle found!"
-        grep "on line" .cocci.log
-        if [ -e cocci-debug.log ]; then
-            echo "--- debug file ---"
-            cat cocci-debug.log
+    else
+        ccount=$(cat .cocci.log | grep "on line" | wc -l)
+        if [ $ccount -gt $exp_ccount ]; then
+            commit_status_set_fail "new coccinelle found! (expected:$exp_ccount got:$ccount)"
+            cat .cocci.log
+            if [ -e cocci-debug.log ]; then
+                echo "--- debug file ---"
+                cat cocci-debug.log
+            fi
         fi
-        exit 1
     fi
     echo "Done"
+
+    # Get the status of all checks and only move to next commit if all passed
+    echo
+    echo "----------- Checks summary --------------"
+    if [[ $(commit_status_get) -eq 0 ]]; then
+        echo "All checks passed for $commit"
+    else
+        echo "One or more checks failed for $commit"
+        exit 1
+    fi
 
     echo "========================================================"
     echo
