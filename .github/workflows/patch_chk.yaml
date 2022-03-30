@@ -67,11 +67,17 @@ jobs:
         git clone --quiet --branch 1.72 --depth 1 git://repo.or.cz/smatch.git
         make -C ./smatch
 
-    - name: Configure & Build Kernel
+    - name: 64-bit Configure & Build Kernel
       run: |
         cp -p .github/deps/local_defconfig ./arch/x86/configs/
         make -s local_defconfig
         make -s -j"$(nproc)"
+
+    - name: Run compile check scripts for 64-bit
+      run: |
+        cp -p .github/deps/compile_check.sh ./
+        export PATH=$PATH:`pwd`/${{ env.UNPACKED }}/usr/bin
+        ./compile_check.sh ${{ steps.get-pr-info.outputs.commits }}
 
     - name: Run check scripts
       run: |
@@ -79,3 +85,15 @@ jobs:
         cp -p .github/deps/xmastree.py ./
         export PATH=$PATH:`pwd`/${{ env.UNPACKED }}/usr/bin
         ./commits_check.sh ${{ steps.get-pr-info.outputs.commits }}
+
+    - name: 32-bit Configure & Build Kernel
+      run: |
+        make -s clean -j"$(nproc)"
+        echo "# CONFIG_64BIT is not set" >> ./arch/x86/configs/local_defconfig
+        make -s local_defconfig
+        make -s -j"$(nproc)"
+
+    - name: Run compile check scripts for 32-bit
+      run: |
+        export PATH=$PATH:`pwd`/${{ env.UNPACKED }}/usr/bin
+        ./compile_check.sh ${{ steps.get-pr-info.outputs.commits }}
