@@ -52,25 +52,11 @@ for commit in $(git log --oneline --no-color -$ncommits --reverse | cut -d ' ' -
         continue
     fi
 
-    echo "----------- Compile check ------------"
-    make -j"$(nproc)" M="$module" clean
-
-    for i in 1 2; do
-        set +e
-        make -s -j"$(nproc)" EXTRA_CFLAGS+="-Werror -Wmaybe-uninitialized" \
-		M="$module" >& .build.log
-        ERROR="$?"
-        set -e
-        [ "$ERROR" != "0" ] || break
-        if [ "$i" != "1" ] || ! grep -q "ERROR: modpost: .* undefined" .build.log; then
-            cat .build.log
-            exit "$ERROR"
-        fi
-        # Rebuild entire kernel to refresh symbols
-        echo "--------------- Rebuild kernel -----------------"
-        make -s -j"$(nproc)"
-        echo "-------- Retry compile check ($target) ---------"
-    done
+    echo "----------- Compile commit ------------"
+    if ! make -s -j"$(nproc)" M="$module" >& .build.log; then
+        cat .build.log
+        exit 1
+    fi
 
     echo "----------- Checkpatch ---------------"
     if ! ./scripts/checkpatch.pl --strict -g $commit --ignore FILE_PATH_CHANGES; then
