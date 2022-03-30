@@ -22,6 +22,7 @@ if [ -z "$1" ]; then
 fi
 
 readonly ncommits=$1
+readonly btype=${2:-64}
 
 exp_ccount=1
 exp_scount=0
@@ -71,6 +72,10 @@ for commit in $(git log --oneline --no-color -$ncommits --reverse | cut -d ' ' -
         make -s -j"$(nproc)"
         echo "-------- Retry compile check ($target) ---------"
     done
+
+    if [ "$btype" == "32" ]; then
+        continue
+    fi
 
     echo "----------- Checkpatch ---------------"
     if ! ./scripts/checkpatch.pl --strict -g $commit --ignore FILE_PATH_CHANGES; then
