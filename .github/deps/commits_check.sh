@@ -36,10 +36,6 @@ module=drivers/net/ethernet/netronome/nfp
 # tree if a commit in the range will trigger this checkpatch.pl check.
 #
 # NOTE: This is an expensive operation and should only be trigger if needed.
-if grep -qiP "^fixes:|\bcommit\s+[0-9a-f]{6,40}\b" <<< $(git log -$ncommits --pretty=%B HEAD); then
-    echo "Check of commit(s) will requier access to the full git tree, fetch the full tree"
-    git fetch --quiet --unshallow
-fi
 
 for commit in $(git log --oneline --no-color -$ncommits --reverse | cut -d ' ' -f 1); do
     echo "============== Checking $commit ========================"
