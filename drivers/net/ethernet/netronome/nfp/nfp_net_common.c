@@ -597,6 +597,7 @@ nfp_net_rx_ring_init(struct nfp_net_rx_ring *rx_ring,
 {
 	struct nfp_net *nn = r_vec->nfp_net;
 
+	pr_info("commit 1\n");
 	rx_ring->idx = idx;
 	rx_ring->r_vec = r_vec;
 	u64_stats_init(&rx_ring->r_vec->rx_sync);
