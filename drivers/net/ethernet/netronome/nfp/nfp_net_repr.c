@@ -168,6 +168,7 @@ static int nfp_repr_change_mtu(struct net_device *netdev, int new_mtu)
 	struct nfp_repr *repr = netdev_priv(netdev);
 	int err;
 
+	pr_info("commit 3\n");
 	err = nfp_app_check_mtu(repr->app, netdev, new_mtu);
 	if (err)
 		return err;
