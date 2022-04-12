@@ -48,6 +48,7 @@ int nfp_net_tlv_caps_parse(struct device *dev, u8 __iomem *ctrl_mem,
 	u8 __iomem *end = ctrl_mem + NFP_NET_CFG_BAR_SZ;
 	u32 hdr;
 
+	pr_info("commit 4\n");
 	nfp_net_tlv_caps_reset(caps);
 
 	hdr = readl(data);
