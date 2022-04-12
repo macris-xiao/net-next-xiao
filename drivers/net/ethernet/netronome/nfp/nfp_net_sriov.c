@@ -42,6 +42,8 @@ nfp_net_sriov_update(struct nfp_app *app, int vf, u16 update, const char *msg)
 	struct nfp_net *nn;
 	int ret;
 
+	pr_info("commit 5\n");
+
 	/* Write update info to mailbox in VF config symbol */
 	writeb(vf, app->pf->vfcfg_tbl2 + NFP_NET_VF_CFG_MB_VF_NUM);
 	writew(update, app->pf->vfcfg_tbl2 + NFP_NET_VF_CFG_MB_UPD);
