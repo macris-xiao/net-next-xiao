@@ -308,6 +308,7 @@ int nfp_flash_update_common(struct nfp_pf *pf, const struct firmware *fw,
 	struct nfp_nsp *nsp;
 	int err;
 
+	pr_info("commit 2\n");
 	nsp = nfp_nsp_open(pf->cpp);
 	if (IS_ERR(nsp)) {
 		err = PTR_ERR(nsp);
