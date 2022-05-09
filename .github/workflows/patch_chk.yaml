@@ -95,5 +95,20 @@ jobs:
 
     - name: Run compile check scripts for 32-bit
       run: |
+        cp -p .github/deps/compile_check.sh ./
+        export PATH=$PATH:`pwd`/${{ env.UNPACKED }}/usr/bin
+        ./compile_check.sh ${{ steps.get-pr-info.outputs.commits }}
+
+    - name: Configure with ipv6 disabled & Build Kernel
+      run: |
+        make -s clean -j"$(nproc)"
+        sed -i 's/# CONFIG_64BIT.*/CONFIG_64BIT=y/g' ./arch/x86/configs/local_defconfig
+        echo "# CONFIG_IPV6 is not set" >> ./arch/x86/configs/local_defconfig
+        make -s local_defconfig
+        make -s -j"$(nproc)"
+
+    - name: Run compile check scripts for CONFIG_IPV6 disabled
+      run: |
+        cp -p .github/deps/compile_check.sh ./
         export PATH=$PATH:`pwd`/${{ env.UNPACKED }}/usr/bin
         ./compile_check.sh ${{ steps.get-pr-info.outputs.commits }}

@@ -25,7 +25,7 @@ for commit in $(git log --oneline --no-color -$ncommits --reverse | cut -d ' ' -
 
     for i in 1 2; do
         set +e
-        make -s -j"$(nproc)" EXTRA_CFLAGS+="-Werror -Wmaybe-uninitialized" \
+        make -s -j"$(nproc)" EXTRA_CFLAGS+="-Werror -Wmaybe-uninitialized -Wunused-but-set-variable" \
                 M="$module" >& .build.log
         ERROR="$?"
         set -e
