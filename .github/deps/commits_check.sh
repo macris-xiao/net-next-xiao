@@ -36,12 +36,12 @@ module=drivers/net/ethernet/netronome/nfp
 #
 # NOTE: This is an expensive operation and should only be trigger if needed.
 for commit in $(git log --oneline --no-color -$ncommits --reverse | cut -d ' ' -f 1); do
-    commit_message=$(git log --oneline -1 | cut -d ' ' -f 2)
+    commit_message=$(git log --oneline -1 $commit | cut -d ' ' -f 2)
     if [ "${commit_message}" == "github-patches-check:" ]; then
         continue
     fi
 
-    if grep -qiP "^fixes:|\bcommit\s+[0-9a-f]{6,40}\b" <<< $(git log -1 --pretty=%B HEAD); then
+    if grep -qiP "^fixes:|\bcommit\s+[0-9a-f]{6,40}\b" <<< $(git log -1 --pretty=%B $commit); then
         echo "Check of commit(s) will requier access to the full git tree, fetch the full tree"
         git fetch --quiet --unshallow
         break
