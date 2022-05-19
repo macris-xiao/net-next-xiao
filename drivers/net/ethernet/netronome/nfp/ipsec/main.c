@@ -18,7 +18,7 @@ static void nfp_ipsec_sriov_disable(struct nfp_app *app)
 
 static netdev_features_t nfp_ipsec_get_features(struct nfp_app *app, struct nfp_net *nn)
 {
-	return 0;
+	return NETIF_F_HW_ESP | NETIF_F_HW_ESP_TX_CSUM;
 }
 
 const struct nfp_app_type app_ipsec = {
