@@ -52,6 +52,7 @@
 #include "nfp_port.h"
 #include "crypto/crypto.h"
 #include "crypto/fw.h"
+#include "nfp_net_ipsec.h"
 
 /**
  * nfp_net_get_fw_version() - Read and parse the FW version
@@ -2221,6 +2222,10 @@ nfp_net_alloc(struct pci_dev *pdev, const struct nfp_dev_info *dev_info,
 	nn->dp.txd_cnt = NFP_NET_TX_DESCS_DEFAULT;
 	nn->dp.rxd_cnt = NFP_NET_RX_DESCS_DEFAULT;
 
+	err = nfp_net_ipsec_init(nn);
+	if (err)
+		goto err_free_xsk_pools;
+
 	sema_init(&nn->bar_lock, 1);
 
 	spin_lock_init(&nn->reconfig_lock);
@@ -2231,13 +2236,19 @@ nfp_net_alloc(struct pci_dev *pdev, const struct nfp_dev_info *dev_info,
 	err = nfp_net_tlv_caps_parse(&nn->pdev->dev, nn->dp.ctrl_bar,
 				     &nn->tlv_caps);
 	if (err)
-		goto err_free_nn;
+		goto err_free_ipsec;
 
 	err = nfp_ccm_mbox_alloc(nn);
 	if (err)
-		goto err_free_nn;
+		goto err_free_ipsec;
 
 	return nn;
+
+err_free_ipsec:
+	nfp_net_ipsec_free(nn);
+
+err_free_xsk_pools:
+	kfree(nn->dp.xsk_pools);
 
 err_free_nn:
 	if (nn->dp.netdev)
@@ -2254,8 +2265,9 @@ err_free_nn:
 void nfp_net_free(struct nfp_net *nn)
 {
 	WARN_ON(timer_pending(&nn->reconfig_timer) || nn->reconfig_posted);
-	nfp_ccm_mbox_free(nn);
 
+	nfp_ccm_mbox_free(nn);
+	nfp_net_ipsec_free(nn);
 	kfree(nn->dp.xsk_pools);
 	if (nn->dp.netdev)
 		free_netdev(nn->dp.netdev);
@@ -2372,6 +2384,9 @@ static void nfp_net_netdev_init(struct nfp_net *nn)
 	}
 	if (nn->cap & NFP_NET_CFG_CTRL_RSS_ANY)
 		netdev->hw_features |= NETIF_F_RXHASH;
+
+	netdev->hw_features |= nfp_app_get_features(nn->app, nn);
+
 	if (nn->cap & NFP_NET_CFG_CTRL_VXLAN) {
 		if (nn->cap & NFP_NET_CFG_CTRL_LSO) {
 			netdev->hw_features |= NETIF_F_GSO_UDP_TUNNEL |

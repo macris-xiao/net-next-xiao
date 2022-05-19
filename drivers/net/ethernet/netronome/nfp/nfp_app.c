@@ -28,6 +28,9 @@ static const struct nfp_app_type *apps[] = {
 #ifdef CONFIG_NFP_APP_ABM_NIC
 	[NFP_APP_ACTIVE_BUFFER_MGMT_NIC] = &app_abm,
 #endif
+#ifdef CONFIG_NFP_APP_IPSEC
+	[NFP_APP_IPSEC_NIC]		 = &app_ipsec,
+#endif
 };
 
 void nfp_check_rhashtable_empty(void *ptr, void *arg)
