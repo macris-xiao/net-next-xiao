@@ -1,0 +1,99 @@
+name: check upstream patches
+
+on: [pull_request]
+
+env:
+  DOWNLOAD: ".download"
+  MAKEFLAGS: "CC=gcc-10"
+  UNPACKED: ".unpacked"
+
+jobs:
+  patch_chk_job:
+    runs-on: ubuntu-latest
+    name: Patches Check
+    steps:
+    - name: Get PR info
+      id: 'get-pr-info'
+      uses: Brymastr/pr-info-action@v1
+
+    - name: Set env var
+      run: |
+        COMMIT_CNT=$((${{ steps.get-pr-info.outputs.commits }}+1))
+        echo "COMMIT_CNT=${COMMIT_CNT}" >> $GITHUB_ENV
+
+    - name: Add Coccinelle Focal PPA
+      run: |
+        sudo apt-get -q=2 install software-properties-common
+        sudo add-apt-repository ppa:npalix/coccinelle
+        sudo apt-get update
+
+    - name: Install deps
+      run: |
+        sudo apt-get -q=2 install \
+          bc \
+          bison \
+          build-essential \
+          coccinelle \
+          flex \
+          gcc-10 \
+          libelf-dev \
+          libpython2.7 \
+          libsqlite3-dev \
+          libssl-dev \
+          python
+        pip3 install ply GitPython
+
+    - name: Check out repository
+      uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+        fetch-depth: ${{ env.COMMIT_CNT }}
+
+    - name: Download sparse
+      uses: ./.github/actions/download
+      with:
+        output-path: ${{ env.DOWNLOAD }}
+        url: "http://cn.archive.ubuntu.com/ubuntu/pool/universe/s/sparse"
+        accept: "sparse_0.6.3-2_amd64.deb"
+
+    - name: Unpack sparse
+      uses: ./.github/actions/unpack-deb
+      with:
+        input-path: ${{ env.DOWNLOAD }}
+        output-path: ${{ env.UNPACKED }}
+
+    - name: Checkout and Build Smatch
+      run: |
+        git clone --quiet --branch 1.72 --depth 1 git://repo.or.cz/smatch.git
+        make -C ./smatch
+
+    - name: 64-bit Configure & Build Kernel
+      run: |
+        cp -p .github/deps/local_defconfig ./arch/x86/configs/
+        make -s local_defconfig
+        make -s -j"$(nproc)"
+
+    - name: Run compile check scripts for 64-bit
+      run: |
+        cp -p .github/deps/compile_check.sh ./
+        export PATH=$PATH:`pwd`/${{ env.UNPACKED }}/usr/bin
+        ./compile_check.sh ${{ steps.get-pr-info.outputs.commits }}
+
+    - name: Run check scripts
+      run: |
+        cp -p .github/deps/commits_check.sh ./
+        cp -p .github/deps/xmastree.py ./
+        export PATH=$PATH:`pwd`/${{ env.UNPACKED }}/usr/bin
+        ./commits_check.sh ${{ steps.get-pr-info.outputs.commits }}
+
+    - name: 32-bit Configure & Build Kernel
+      run: |
+        make -s clean -j"$(nproc)"
+        echo "# CONFIG_64BIT is not set" >> ./arch/x86/configs/local_defconfig
+        make -s local_defconfig
+        make -s -j"$(nproc)"
+
+    - name: Run compile check scripts for 32-bit
+      run: |
+        export PATH=$PATH:`pwd`/${{ env.UNPACKED }}/usr/bin
+        ./compile_check.sh ${{ steps.get-pr-info.outputs.commits }}
