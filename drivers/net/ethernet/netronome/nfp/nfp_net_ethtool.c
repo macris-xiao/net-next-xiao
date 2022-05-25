@@ -842,8 +842,10 @@ nfp_port_get_fecparam(struct net_device *netdev,
 	if (!nfp_eth_can_support_fec(eth_port))
 		return 0;
 
-	param->fec = nfp_port_fec_nsp_to_ethtool(eth_port->fec_modes_supported);
 	param->active_fec = nfp_port_fec_nsp_to_ethtool(eth_port->fec);
+	/* Display None if user doesn't configure fec mode */
+	if (port->fec_configured != ETHTOOL_FEC_NONE)
+		param->fec = port->fec_configured;
 
 	return 0;
 }
@@ -872,6 +874,8 @@ nfp_port_set_fecparam(struct net_device *netdev,
 	if (!err)
 		/* Only refresh if we did something */
 		nfp_net_refresh_port_table(port);
+
+	port->fec_configured = param->fec;
 
 	return err < 0 ? err : 0;
 }
