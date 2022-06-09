@@ -410,7 +410,7 @@ nfp_net_fw_find(struct pci_dev *pdev, struct nfp_pf *pf)
 		return NULL;
 	}
 
-	fw_model = nfp_hwinfo_lookup(pf->hwinfo, "assembly.partno");
+	fw_model = nfp_hwinfo_lookup(pf->hwinfo, "nffw.partno");
 	if (!fw_model) {
 		dev_err(&pdev->dev, "Error: can't read part number\n");
 		return NULL;
@@ -751,11 +751,12 @@ static int nfp_pci_probe(struct pci_dev *pdev,
 
 	pf->hwinfo = nfp_hwinfo_read(pf->cpp);
 
-	dev_info(&pdev->dev, "Assembly: %s%s%s-%s CPLD: %s\n",
+	dev_info(&pdev->dev, "Assembly: %s%s%s-%s Nffw: %s CPLD: %s\n",
 		 nfp_hwinfo_lookup(pf->hwinfo, "assembly.vendor"),
 		 nfp_hwinfo_lookup(pf->hwinfo, "assembly.partno"),
 		 nfp_hwinfo_lookup(pf->hwinfo, "assembly.serial"),
 		 nfp_hwinfo_lookup(pf->hwinfo, "assembly.revision"),
+		 nfp_hwinfo_lookup(pf->hwinfo, "nffw.partno"),
 		 nfp_hwinfo_lookup(pf->hwinfo, "cpld.version"));
 
 	err = nfp_pf_board_state_wait(pf);
