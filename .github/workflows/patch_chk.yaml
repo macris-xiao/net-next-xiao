@@ -67,7 +67,7 @@ jobs:
 
     - name: Checkout and Build Smatch
       run: |
-        git clone --quiet --branch 1.72 --depth 1 git://repo.or.cz/smatch.git
+        git clone --quiet --branch 1.72 --depth 1 https://github.com/error27/smatch
         make -C ./smatch
 
     - name: 64-bit Configure & Build Kernel
