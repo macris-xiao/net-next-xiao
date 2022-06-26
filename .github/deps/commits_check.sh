@@ -74,7 +74,7 @@ for commit in $(git log --oneline --no-color -$ncommits --reverse | cut -d ' ' -
     fi
 
     echo "----------- Checkpatch ---------------"
-    if ! ./scripts/checkpatch.pl --strict -g $commit --ignore FILE_PATH_CHANGES; then
+    if ! ./scripts/checkpatch.pl --strict -g $commit --ignore FILE_PATH_CHANGES --ignore CAMELCASE; then
         commit_status_set_fail "checkpatch.pl exited with non-zero return code"
     fi
 
