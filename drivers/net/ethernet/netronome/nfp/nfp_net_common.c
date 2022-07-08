@@ -2198,6 +2198,20 @@ nfp_net_alloc(struct pci_dev *pdev, const struct nfp_dev_info *dev_info,
 		goto err_free_nn;
 	}
 
+	nn->r_vecs = kcalloc(nfp_net_max_r_vecs,
+			     sizeof(*nn->r_vecs), GFP_KERNEL);
+	if (!nn->r_vecs) {
+		err = -ENOMEM;
+		goto err_free_nn;
+	}
+
+	nn->irq_entries = kcalloc(nfp_net_max_irqs,
+				  sizeof(*nn->irq_entries), GFP_KERNEL);
+	if (!nn->irq_entries) {
+		err = -ENOMEM;
+		goto err_free_nn;
+	}
+
 	nn->max_tx_rings = max_tx_rings;
 	nn->max_rx_rings = max_rx_rings;
 
@@ -2240,6 +2254,10 @@ nfp_net_alloc(struct pci_dev *pdev, const struct nfp_dev_info *dev_info,
 	return nn;
 
 err_free_nn:
+	if (nn->r_vecs)
+		kfree(nn->r_vecs);
+	if (nn->irq_entries)
+		kfree(nn->irq_entries);
 	if (nn->dp.netdev)
 		free_netdev(nn->dp.netdev);
 	else
@@ -2257,6 +2275,10 @@ void nfp_net_free(struct nfp_net *nn)
 	nfp_ccm_mbox_free(nn);
 
 	kfree(nn->dp.xsk_pools);
+	if (nn->r_vecs)
+		kfree(nn->r_vecs);
+	if (nn->irq_entries)
+		kfree(nn->irq_entries);
 	if (nn->dp.netdev)
 		free_netdev(nn->dp.netdev);
 	else

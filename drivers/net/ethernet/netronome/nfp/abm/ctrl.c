@@ -55,7 +55,7 @@ nfp_abm_ctrl_stat(struct nfp_abm_link *alink, const struct nfp_rtsym *sym,
 	u32 val32;
 	int err;
 
-	qid = band * NFP_NET_MAX_RX_RINGS + alink->queue_base + queue;
+	qid = band * nfp_net_max_rx_rings + alink->queue_base + queue;
 
 	sym_offset = qid * stride + offset;
 	if (is_u64)
@@ -100,7 +100,7 @@ int nfp_abm_ctrl_set_q_lvl(struct nfp_abm_link *alink, unsigned int band,
 {
 	unsigned int threshold;
 
-	threshold = band * NFP_NET_MAX_RX_RINGS + alink->queue_base + queue;
+	threshold = band * nfp_net_max_rx_rings + alink->queue_base + queue;
 
 	return __nfp_abm_ctrl_set_q_lvl(alink->abm, threshold, val);
 }
@@ -133,7 +133,7 @@ int nfp_abm_ctrl_set_q_act(struct nfp_abm_link *alink, unsigned int band,
 {
 	unsigned int qid;
 
-	qid = band * NFP_NET_MAX_RX_RINGS + alink->queue_base + queue;
+	qid = band * nfp_net_max_rx_rings + alink->queue_base + queue;
 
 	return __nfp_abm_ctrl_set_q_act(alink->abm, qid, act);
 }
@@ -349,7 +349,7 @@ nfp_abm_ctrl_find_q_rtsym(struct nfp_abm *abm, const char *name_fmt,
 {
 	char pf_symbol[64];
 
-	size = array3_size(size, abm->num_bands, NFP_NET_MAX_RX_RINGS);
+	size = array3_size(size, abm->num_bands, nfp_net_max_rx_rings);
 	snprintf(pf_symbol, sizeof(pf_symbol), name_fmt,
 		 abm->pf_id, nfp_abm_has_prio(abm) ? "_per_band" : "");
 

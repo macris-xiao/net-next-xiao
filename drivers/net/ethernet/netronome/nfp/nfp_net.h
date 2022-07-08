@@ -76,11 +76,15 @@
 #define NFP_NET_MIN_VNIC_IRQS		(NFP_NET_NON_Q_VECTORS + 1)
 
 /* Queue/Ring definitions */
-#define NFP_NET_MAX_TX_RINGS	64	/* Max. # of Tx rings per device */
-#define NFP_NET_MAX_RX_RINGS	64	/* Max. # of Rx rings per device */
-#define NFP_NET_MAX_R_VECS	(NFP_NET_MAX_TX_RINGS > NFP_NET_MAX_RX_RINGS ? \
-				 NFP_NET_MAX_TX_RINGS : NFP_NET_MAX_RX_RINGS)
-#define NFP_NET_MAX_IRQS	(NFP_NET_NON_Q_VECTORS + NFP_NET_MAX_R_VECS)
+#define NFP_NFD3_MAX_TX_RINGS	64	/* Max. # of Tx rings per device for nfd3*/
+#define NFP_NFD3_MAX_RX_RINGS	64	/* Max. # of Rx rings per device for nfd3*/
+#define NFP_NFDK_MAX_TX_RINGS	64	/* Max. # of Tx rings per device for nfdK*/
+#define NFP_NFDK_MAX_RX_RINGS	64	/* Max. # of Rx rings per device for nfdK*/
+
+extern u16 nfp_net_max_tx_rings;
+extern u16 nfp_net_max_rx_rings;
+extern u16 nfp_net_max_r_vecs;
+extern u16 nfp_net_max_irqs;
 
 #define NFP_NET_TX_DESCS_DEFAULT 4096	/* Default # of Tx descs per ring */
 #define NFP_NET_RX_DESCS_DEFAULT 4096	/* Default # of Rx descs per ring */
@@ -634,8 +638,8 @@ struct nfp_net {
 	int stride_rx;
 
 	unsigned int max_r_vecs;
-	struct nfp_net_r_vector r_vecs[NFP_NET_MAX_R_VECS];
-	struct msix_entry irq_entries[NFP_NET_MAX_IRQS];
+	struct nfp_net_r_vector *r_vecs;
+	struct msix_entry *irq_entries;
 
 	irq_handler_t lsc_handler;
 	char lsc_name[IFNAMSIZ + 8];

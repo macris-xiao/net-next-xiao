@@ -19,6 +19,7 @@
 #include <linux/msi.h>
 #include <linux/random.h>
 #include <linux/rtnetlink.h>
+#include <linux/bitfield.h>
 
 #include "nfpcore/nfp.h"
 #include "nfpcore/nfp_cpp.h"
@@ -34,6 +35,11 @@
 #include "nfp_port.h"
 
 #define NFP_PF_CSR_SLICE_SIZE	(32 * 1024)
+
+u16 nfp_net_max_tx_rings;
+u16 nfp_net_max_rx_rings;
+u16 nfp_net_max_r_vecs;
+u16 nfp_net_max_irqs;
 
 /**
  * nfp_net_get_mac_addr() - Get the MAC address.
@@ -704,6 +710,26 @@ int nfp_net_pci_probe(struct nfp_pf *pf)
 			goto err_unmap;
 		}
 	}
+	switch (FIELD_GET(NFP_NET_CFG_VERSION_DP_MASK, fw_ver.extend)) {
+	case NFP_NET_CFG_VERSION_DP_NFD3:
+		nfp_net_max_tx_rings = NFP_NFD3_MAX_TX_RINGS;
+		nfp_net_max_rx_rings = NFP_NFD3_MAX_RX_RINGS;
+		break;
+	case NFP_NET_CFG_VERSION_DP_NFDK:
+		nfp_net_max_tx_rings = NFP_NFDK_MAX_TX_RINGS;
+		nfp_net_max_rx_rings = NFP_NFDK_MAX_RX_RINGS;
+		break;
+	default:
+		err = -EINVAL;
+		goto err_unmap;
+	}
+
+	if (nfp_net_max_tx_rings > nfp_net_max_rx_rings)
+		nfp_net_max_r_vecs = nfp_net_max_tx_rings;
+	else
+		nfp_net_max_r_vecs = nfp_net_max_rx_rings;
+
+	nfp_net_max_irqs = NFP_NET_NON_Q_VECTORS + nfp_net_max_rx_rings;
 
 	err = nfp_net_pf_app_init(pf, qc_bar, stride);
 	if (err)
