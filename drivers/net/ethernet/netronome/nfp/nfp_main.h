@@ -17,6 +17,8 @@
 #include <linux/workqueue.h>
 #include <net/devlink.h>
 
+#define NFP_NET_CFG_QUEUE_TYPE	5
+
 struct dentry;
 struct device;
 struct pci_dev;
@@ -111,6 +113,7 @@ struct nfp_pf {
 
 	unsigned int limit_vfs;
 	unsigned int num_vfs;
+	u8 config_vfs_queue[NFP_NET_CFG_QUEUE_TYPE];
 
 	bool fw_loaded;
 	bool unload_fw_on_remove;

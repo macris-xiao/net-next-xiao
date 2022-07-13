@@ -85,6 +85,7 @@ extern u16 nfp_net_max_tx_rings;
 extern u16 nfp_net_max_rx_rings;
 extern u16 nfp_net_max_r_vecs;
 extern u16 nfp_net_max_irqs;
+extern u16 nfp_net_max_vf_queues;
 
 #define NFP_NET_TX_DESCS_DEFAULT 4096	/* Default # of Tx descs per ring */
 #define NFP_NET_RX_DESCS_DEFAULT 4096	/* Default # of Rx descs per ring */
@@ -98,6 +99,38 @@ extern u16 nfp_net_max_irqs;
 #define NFP_NET_RX_BUF_HEADROOM	(NET_SKB_PAD + NET_IP_ALIGN)
 #define NFP_NET_RX_BUF_NON_DATA	(NFP_NET_RX_BUF_HEADROOM +		\
 				 SKB_DATA_ALIGN(sizeof(struct skb_shared_info)))
+
+/**
+ * SRIOV VF configuration.
+ * The configuration memory begins with a mailbox region for communication with
+ * the firmware followed by individual VF entries.
+ */
+#define NFP_NET_VF_CFG_SZ		16
+#define NFP_NET_VF_CFG_MB_SZ		16
+#define NFP_NET_VF_CFG_MAX_CONFIG_QUEUE	(1 << (NFP_NET_CFG_QUEUE_TYPE - 1))
+
+/* VF config mailbox */
+#define NFP_NET_VF_CFG_MB				0x0
+#define NFP_NET_VF_CFG_MB_CAP				0x0
+#define   NFP_NET_VF_CFG_MB_CAP_MAC			  (0x1 << 0)
+#define   NFP_NET_VF_CFG_MB_CAP_VLAN			  (0x1 << 1)
+#define   NFP_NET_VF_CFG_MB_CAP_SPOOF			  (0x1 << 2)
+#define   NFP_NET_VF_CFG_MB_CAP_LINK_STATE		  (0x1 << 3)
+#define   NFP_NET_VF_CFG_MB_CAP_TRUST			  (0x1 << 4)
+#define   NFP_NET_VF_CFG_MB_CAP_VLAN_PROTO		  (0x1 << 5)
+#define   NFP_NET_VF_CFG_MB_CAP_RATE			  (0x1 << 6)
+#define   NFP_NET_VF_CFG_MB_CAP_QUEUE_CONFIG		  (0x1 << 7)
+#define NFP_NET_VF_CFG_MB_RET				0x2
+#define NFP_NET_VF_CFG_MB_UPD				0x4
+#define   NFP_NET_VF_CFG_MB_UPD_MAC			  (0x1 << 0)
+#define   NFP_NET_VF_CFG_MB_UPD_VLAN			  (0x1 << 1)
+#define   NFP_NET_VF_CFG_MB_UPD_SPOOF			  (0x1 << 2)
+#define   NFP_NET_VF_CFG_MB_UPD_LINK_STATE		  (0x1 << 3)
+#define   NFP_NET_VF_CFG_MB_UPD_TRUST			  (0x1 << 4)
+#define   NFP_NET_VF_CFG_MB_UPD_VLAN_PROTO		  (0x1 << 5)
+#define   NFP_NET_VF_CFG_MB_UPD_RATE		  	  (0x1 << 6)
+#define   NFP_NET_VF_CFG_MB_UPD_QUEUE_CONFIG	  	  (0x1 << 7)
+#define NFP_NET_VF_CFG_MB_VF_NUM			0x7
 
 /* Forward declarations */
 struct nfp_cpp;

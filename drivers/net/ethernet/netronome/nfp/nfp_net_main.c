@@ -40,6 +40,7 @@ u16 nfp_net_max_tx_rings;
 u16 nfp_net_max_rx_rings;
 u16 nfp_net_max_r_vecs;
 u16 nfp_net_max_irqs;
+u16 nfp_net_max_vf_queues;
 
 /**
  * nfp_net_get_mac_addr() - Get the MAC address.
@@ -297,9 +298,10 @@ static int nfp_net_pf_init_vnics(struct nfp_pf *pf)
 		err = nfp_net_pf_init_vnic(pf, nn, id);
 		if (err)
 			goto err_prev_deinit;
-
+		nfp_net_max_vf_queues -= nn->dp.num_r_vecs;
 		id++;
 	}
+	pf->config_vfs_queue[NFP_NET_CFG_QUEUE_TYPE - 1] = nfp_net_max_vf_queues;
 
 	return 0;
 
@@ -730,6 +732,8 @@ int nfp_net_pci_probe(struct nfp_pf *pf)
 		nfp_net_max_r_vecs = nfp_net_max_rx_rings;
 
 	nfp_net_max_irqs = NFP_NET_NON_Q_VECTORS + nfp_net_max_rx_rings;
+	memset(&pf->config_vfs_queue, 0, sizeof(pf->config_vfs_queue));
+	nfp_net_max_vf_queues = nfp_net_max_r_vecs - 1;
 
 	err = nfp_net_pf_app_init(pf, qc_bar, stride);
 	if (err)
