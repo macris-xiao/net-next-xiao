@@ -24,7 +24,7 @@ fi
 readonly ncommits=$1
 
 exp_ccount=1
-exp_scount=0
+exp_scount=10
 module=drivers/net/ethernet/netronome/nfp
 
 # If a commit message contains a Fixes tag or mentions a different commit the
