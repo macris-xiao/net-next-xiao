@@ -56,7 +56,7 @@ jobs:
       uses: ./.github/actions/download
       with:
         output-path: ${{ env.DOWNLOAD }}
-        url: "http://cn.archive.ubuntu.com/ubuntu/pool/universe/s/sparse"
+        url: "http://deb.debian.org/debian/pool/main/s/sparse/"
         accept: "sparse_0.6.3-2_amd64.deb"
 
     - name: Unpack sparse
