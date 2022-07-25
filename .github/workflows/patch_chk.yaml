@@ -52,12 +52,21 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
         fetch-depth: ${{ env.COMMIT_CNT }}
 
+    - name: Download glibc
+      uses: ./.github/actions/download
+      with:
+        output-path: ${{ env.DOWNLOAD }}
+        url: "http://old-releases.ubuntu.com/ubuntu/pool/main/g/glibc"
+        accept: |
+          "libc6_2.34-0ubuntu3_amd64.deb"
+          "libc6-dbg_2.34-0ubuntu3_amd64.deb"
+
     - name: Download sparse
       uses: ./.github/actions/download
       with:
         output-path: ${{ env.DOWNLOAD }}
         url: "http://cn.archive.ubuntu.com/ubuntu/pool/universe/s/sparse"
-        accept: "sparse_0.6.3-2_amd64.deb"
+        accept: "sparse_0.6.4-2_amd64.deb"
 
     - name: Unpack sparse
       uses: ./.github/actions/unpack-deb
