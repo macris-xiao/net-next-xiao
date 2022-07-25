@@ -80,4 +80,11 @@ nfp-objs += \
 	    abm/main.o
 endif
 
+ifeq ($(CONFIG_NFP_APP_IPSEC),y)
+nfp-objs += \
+	    nfp_net_ipsec.o \
+	    ipsec/main.o \
+	    nfd3/ipsec.o
+endif
+
 nfp-$(CONFIG_NFP_DEBUG) += nfp_net_debugfs.o

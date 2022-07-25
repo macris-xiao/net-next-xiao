@@ -29,12 +29,14 @@ enum nfp_app_id {
 	NFP_APP_BPF_NIC		= 0x2,
 	NFP_APP_FLOWER_NIC	= 0x3,
 	NFP_APP_ACTIVE_BUFFER_MGMT_NIC = 0x4,
+	NFP_APP_IPSEC_NIC	= 0x5,
 };
 
 extern const struct nfp_app_type app_nic;
 extern const struct nfp_app_type app_bpf;
 extern const struct nfp_app_type app_flower;
 extern const struct nfp_app_type app_abm;
+extern const struct nfp_app_type app_ipsec;
 
 /**
  * struct nfp_app_type - application definition
@@ -48,6 +50,7 @@ extern const struct nfp_app_type app_abm;
  * Callbacks
  * @init:	perform basic app checks and init
  * @clean:	clean app state
+ * @get_features: Get Nic features
  * @extra_cap:	extra capabilities string
  * @ndo_init:	vNIC and repr netdev .ndo_init
  * @ndo_uninit:	vNIC and repr netdev .ndo_unint
@@ -89,7 +92,7 @@ struct nfp_app_type {
 
 	int (*init)(struct nfp_app *app);
 	void (*clean)(struct nfp_app *app);
-
+	netdev_features_t (*get_features)(struct nfp_app *app, struct nfp_net *nn);
 	const char *(*extra_cap)(struct nfp_app *app, struct nfp_net *nn);
 
 	int (*ndo_init)(struct nfp_app *app, struct net_device *netdev);
@@ -310,6 +313,14 @@ static inline const char *nfp_app_extra_cap(struct nfp_app *app,
 	if (!app || !app->type->extra_cap)
 		return "";
 	return app->type->extra_cap(app, nn);
+}
+
+static inline netdev_features_t nfp_app_get_features(struct nfp_app *app,
+						     struct nfp_net *nn)
+{
+	if (!app || !app->type->get_features)
+		return 0;
+	return app->type->get_features(app, nn);
 }
 
 static inline bool nfp_app_has_tc(struct nfp_app *app)
