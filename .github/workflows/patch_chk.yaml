@@ -52,12 +52,25 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
         fetch-depth: ${{ env.COMMIT_CNT }}
 
+    - name: Download glibc
+      uses: ./.github/actions/download
+      with:
+        output-path: ${{ env.DOWNLOAD }}
+        url: "http://cn.archive.ubuntu.com/ubuntu/pool/universe/g/glibc"
+        accept: "glibc-source_2.35-0ubuntu3_all.deb"
+
+    - name: Unpack glibc
+      uses: ./.github/actions/unpack-deb
+      with:
+        input-path: ${{ env.DOWNLOAD }}
+        output-path: ${{ env.UNPACKED }}
+
     - name: Download sparse
       uses: ./.github/actions/download
       with:
         output-path: ${{ env.DOWNLOAD }}
         url: "http://cn.archive.ubuntu.com/ubuntu/pool/universe/s/sparse"
-        accept: "sparse_0.6.3-2_amd64.deb"
+        accept: "sparse_0.6.4-2_amd64.deb"
 
     - name: Unpack sparse
       uses: ./.github/actions/unpack-deb
