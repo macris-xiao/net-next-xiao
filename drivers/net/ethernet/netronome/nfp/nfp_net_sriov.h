@@ -4,34 +4,6 @@
 #ifndef _NFP_NET_SRIOV_H_
 #define _NFP_NET_SRIOV_H_
 
-/* SRIOV VF configuration.
- * The configuration memory begins with a mailbox region for communication with
- * the firmware followed by individual VF entries.
- */
-#define NFP_NET_VF_CFG_SZ		16
-#define NFP_NET_VF_CFG_MB_SZ		16
-
-/* VF config mailbox */
-#define NFP_NET_VF_CFG_MB				0x0
-#define NFP_NET_VF_CFG_MB_CAP				0x0
-#define   NFP_NET_VF_CFG_MB_CAP_MAC			  (0x1 << 0)
-#define   NFP_NET_VF_CFG_MB_CAP_VLAN			  (0x1 << 1)
-#define   NFP_NET_VF_CFG_MB_CAP_SPOOF			  (0x1 << 2)
-#define   NFP_NET_VF_CFG_MB_CAP_LINK_STATE		  (0x1 << 3)
-#define   NFP_NET_VF_CFG_MB_CAP_TRUST			  (0x1 << 4)
-#define   NFP_NET_VF_CFG_MB_CAP_VLAN_PROTO		  (0x1 << 5)
-#define   NFP_NET_VF_CFG_MB_CAP_RATE			  (0x1 << 6)
-#define NFP_NET_VF_CFG_MB_RET				0x2
-#define NFP_NET_VF_CFG_MB_UPD				0x4
-#define   NFP_NET_VF_CFG_MB_UPD_MAC			  (0x1 << 0)
-#define   NFP_NET_VF_CFG_MB_UPD_VLAN			  (0x1 << 1)
-#define   NFP_NET_VF_CFG_MB_UPD_SPOOF			  (0x1 << 2)
-#define   NFP_NET_VF_CFG_MB_UPD_LINK_STATE		  (0x1 << 3)
-#define   NFP_NET_VF_CFG_MB_UPD_TRUST			  (0x1 << 4)
-#define   NFP_NET_VF_CFG_MB_UPD_VLAN_PROTO		  (0x1 << 5)
-#define   NFP_NET_VF_CFG_MB_UPD_RATE			  (0x1 << 6)
-#define NFP_NET_VF_CFG_MB_VF_NUM			0x7
-
 /* VF config entry
  * MAC_LO is set that the MAC address can be read in a single 6 byte read
  * by the NFP

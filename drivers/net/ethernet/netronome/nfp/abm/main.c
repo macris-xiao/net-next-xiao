@@ -432,7 +432,7 @@ static int nfp_abm_fw_init_reset(struct nfp_abm *abm)
 	if (!abm->red_support)
 		return 0;
 
-	for (i = 0; i < abm->num_bands * NFP_NET_MAX_RX_RINGS; i++) {
+	for (i = 0; i < abm->num_bands * nfp_net_max_rx_rings; i++) {
 		__nfp_abm_ctrl_set_q_lvl(abm, i, NFP_ABM_LVL_INFINITY);
 		__nfp_abm_ctrl_set_q_act(abm, i, NFP_ABM_ACT_DROP);
 	}
@@ -472,7 +472,7 @@ static int nfp_abm_init(struct nfp_app *app)
 		goto err_free_abm;
 
 	err = -ENOMEM;
-	abm->num_thresholds = array_size(abm->num_bands, NFP_NET_MAX_RX_RINGS);
+	abm->num_thresholds = array_size(abm->num_bands, nfp_net_max_rx_rings);
 	abm->threshold_undef = bitmap_zalloc(abm->num_thresholds, GFP_KERNEL);
 	if (!abm->threshold_undef)
 		goto err_free_abm;

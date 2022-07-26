@@ -243,13 +243,75 @@ static int nfp_pcie_sriov_enable(struct pci_dev *pdev, int num_vfs)
 {
 #ifdef CONFIG_PCI_IOV
 	struct nfp_pf *pf = pci_get_drvdata(pdev);
+	unsigned int i, j, k, cfg_vf_count,offset;
+	u8 shift[NFP_NET_CFG_QUEUE_TYPE];
 	struct devlink *devlink;
+	struct nfp_net *nn;
+	u16 cap_vf;
+	u32 raw;
 	int err;
 
 	if (num_vfs > pf->limit_vfs) {
 		nfp_info(pf->cpp, "Firmware limits number of VFs to %u\n",
 			 pf->limit_vfs);
 		return -EINVAL;
+	}
+
+	cap_vf = readw(pf->vfcfg_tbl2 + NFP_NET_VF_CFG_MB_CAP);
+	if (cap_vf & NFP_NET_VF_CFG_MB_CAP_QUEUE_CONFIG != NFP_NET_VF_CFG_MB_CAP_QUEUE_CONFIG) {
+		nfp_info(pf->cpp, "config vf queues is not supported\n");
+	} else {
+		for (i=0; i < NFP_NET_CFG_QUEUE_TYPE; i++)
+			shift[i] = i * 8;
+		raw = 0; k = 0; cfg_vf_count = 0;
+		offset = NFP_NET_VF_CFG_MB_SZ + pf->limit_vfs * NFP_NET_VF_CFG_SZ;
+		for (i = 0; i < NFP_NET_CFG_QUEUE_TYPE; i++) {
+			for (j = 0; j < pf->config_vfs_queue[i]; j++) {
+				cfg_vf_count++;
+				if (k < sizeof(raw)) {
+					raw |= (NFP_NET_VF_CFG_MAX_CONFIG_QUEUE >> i) << shift[k];
+					k++;
+				} else {
+					writel(raw, pf->vfcfg_tbl2 + offset);
+					offset += 4;
+					raw = 0;
+					k = 0;
+					raw |= (NFP_NET_VF_CFG_MAX_CONFIG_QUEUE >> i) << shift[k];
+					k++;
+				}
+			}
+		}
+
+		if (k) {
+			writel(raw, pf->vfcfg_tbl2 + offset);
+			offset += 4;
+		}
+
+		j = (nfp_net_max_r_vecs + sizeof(raw) - 1) / sizeof(raw)
+		    - (cfg_vf_count + sizeof(raw) - 1) / sizeof(raw);
+		raw = 0;
+
+		for (i = 0; i < j; i++) {
+			writel(raw, pf->vfcfg_tbl2 + offset);
+			offset += 4;
+		}
+
+		writew(NFP_NET_VF_CFG_MB_UPD_QUEUE_CONFIG, pf->vfcfg_tbl2 + NFP_NET_VF_CFG_MB_UPD);
+
+		nn = list_first_entry(&pf->vnics, struct nfp_net, vnic_list);
+		err = nfp_net_reconfig(nn, NFP_NET_CFG_UPDATE_VF);
+		if (err) {
+			nfp_warn(pf->cpp,
+				 "FW reconfig VF config queue failed: %d\n", err);
+			return err;
+		}
+
+		err = readw(pf->vfcfg_tbl2 + NFP_NET_VF_CFG_MB_RET);
+		if (err) {
+			nfp_warn(pf->cpp,
+				 "FW refused VF config queue update with errno: %d\n", err);
+			return -err;
+		}
 	}
 
 	err = pci_enable_sriov(pdev, num_vfs);
@@ -392,7 +454,7 @@ nfp_net_fw_find(struct pci_dev *pdev, struct nfp_pf *pf)
 	/* First try to find a firmware image specific for this device */
 	interface = nfp_cpp_interface(pf->cpp);
 	nfp_cpp_serial(pf->cpp, &serial);
-	sprintf(fw_name, "netronome/serial-%pMF-%02hhx-%02hhx.nffw",
+	sprintf(fw_name, "netronome/serial-%pMF-%02x-%02x.nffw",
 		serial, interface >> 8, interface & 0xff);
 	fw = nfp_net_fw_request(pdev, pf, fw_name);
 	if (fw)
@@ -410,7 +472,9 @@ nfp_net_fw_find(struct pci_dev *pdev, struct nfp_pf *pf)
 		return NULL;
 	}
 
-	fw_model = nfp_hwinfo_lookup(pf->hwinfo, "assembly.partno");
+	fw_model = nfp_hwinfo_lookup(pf->hwinfo, "nffw.partno");
+	if (!fw_model)
+		fw_model = nfp_hwinfo_lookup(pf->hwinfo, "assembly.partno");
 	if (!fw_model) {
 		dev_err(&pdev->dev, "Error: can't read part number\n");
 		return NULL;

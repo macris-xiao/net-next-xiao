@@ -632,6 +632,7 @@ static int mlx5_deactivate_lag(struct mlx5_lag *ldev)
 static bool mlx5_lag_check_prereq(struct mlx5_lag *ldev)
 {
 #ifdef CONFIG_MLX5_ESWITCH
+	struct mlx5_core_dev *dev;
 	u8 mode;
 #endif
 	int i;
@@ -641,11 +642,11 @@ static bool mlx5_lag_check_prereq(struct mlx5_lag *ldev)
 			return false;
 
 #ifdef CONFIG_MLX5_ESWITCH
-	mode = mlx5_eswitch_mode(ldev->pf[MLX5_LAG_P1].dev);
-
-	if (mode != MLX5_ESWITCH_NONE && mode != MLX5_ESWITCH_OFFLOADS)
+	dev = ldev->pf[MLX5_LAG_P1].dev;
+	if ((mlx5_sriov_is_enabled(dev)) && !is_mdev_switchdev_mode(dev))
 		return false;
 
+	mode = mlx5_eswitch_mode(dev);
 	for (i = 0; i < ldev->ports; i++)
 		if (mlx5_eswitch_mode(ldev->pf[i].dev) != mode)
 			return false;
@@ -760,8 +761,7 @@ static bool mlx5_lag_is_roce_lag(struct mlx5_lag *ldev)
 
 #ifdef CONFIG_MLX5_ESWITCH
 	for (i = 0; i < ldev->ports; i++)
-		roce_lag = roce_lag &&
-			ldev->pf[i].dev->priv.eswitch->mode == MLX5_ESWITCH_NONE;
+		roce_lag = roce_lag && is_mdev_legacy_mode(ldev->pf[i].dev);
 #endif
 
 	return roce_lag;
@@ -783,7 +783,7 @@ static void mlx5_do_bond(struct mlx5_lag *ldev)
 {
 	struct mlx5_core_dev *dev0 = ldev->pf[MLX5_LAG_P1].dev;
 	struct mlx5_core_dev *dev1 = ldev->pf[MLX5_LAG_P2].dev;
-	struct lag_tracker tracker;
+	struct lag_tracker tracker = { };
 	bool do_bond, roce_lag;
 	int err;
 	int i;

@@ -253,7 +253,7 @@ void nfp_abm_qdisc_offload_update(struct nfp_abm_link *alink)
 	/* Mark all thresholds as unconfigured */
 	for (i = 0; i < abm->num_bands; i++)
 		__bitmap_set(abm->threshold_undef,
-			     i * NFP_NET_MAX_RX_RINGS + alink->queue_base,
+			     i * nfp_net_max_rx_rings + alink->queue_base,
 			     alink->total_queues);
 
 	/* Clear offload marks */

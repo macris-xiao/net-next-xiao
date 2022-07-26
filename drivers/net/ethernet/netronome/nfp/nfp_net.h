@@ -76,11 +76,16 @@
 #define NFP_NET_MIN_VNIC_IRQS		(NFP_NET_NON_Q_VECTORS + 1)
 
 /* Queue/Ring definitions */
-#define NFP_NET_MAX_TX_RINGS	64	/* Max. # of Tx rings per device */
-#define NFP_NET_MAX_RX_RINGS	64	/* Max. # of Rx rings per device */
-#define NFP_NET_MAX_R_VECS	(NFP_NET_MAX_TX_RINGS > NFP_NET_MAX_RX_RINGS ? \
-				 NFP_NET_MAX_TX_RINGS : NFP_NET_MAX_RX_RINGS)
-#define NFP_NET_MAX_IRQS	(NFP_NET_NON_Q_VECTORS + NFP_NET_MAX_R_VECS)
+#define NFP_NFD3_MAX_TX_RINGS	64	/* Max. # of Tx rings per device for nfd3*/
+#define NFP_NFD3_MAX_RX_RINGS	64	/* Max. # of Rx rings per device for nfd3*/
+#define NFP_NFDK_MAX_TX_RINGS	64	/* Max. # of Tx rings per device for nfdK*/
+#define NFP_NFDK_MAX_RX_RINGS	64	/* Max. # of Rx rings per device for nfdK*/
+
+extern u16 nfp_net_max_tx_rings;
+extern u16 nfp_net_max_rx_rings;
+extern u16 nfp_net_max_r_vecs;
+extern u16 nfp_net_max_irqs;
+extern u16 nfp_net_max_vf_queues;
 
 #define NFP_NET_TX_DESCS_DEFAULT 4096	/* Default # of Tx descs per ring */
 #define NFP_NET_RX_DESCS_DEFAULT 4096	/* Default # of Rx descs per ring */
@@ -94,6 +99,38 @@
 #define NFP_NET_RX_BUF_HEADROOM	(NET_SKB_PAD + NET_IP_ALIGN)
 #define NFP_NET_RX_BUF_NON_DATA	(NFP_NET_RX_BUF_HEADROOM +		\
 				 SKB_DATA_ALIGN(sizeof(struct skb_shared_info)))
+
+/**
+ * SRIOV VF configuration.
+ * The configuration memory begins with a mailbox region for communication with
+ * the firmware followed by individual VF entries.
+ */
+#define NFP_NET_VF_CFG_SZ		16
+#define NFP_NET_VF_CFG_MB_SZ		16
+#define NFP_NET_VF_CFG_MAX_CONFIG_QUEUE	(1 << (NFP_NET_CFG_QUEUE_TYPE - 1))
+
+/* VF config mailbox */
+#define NFP_NET_VF_CFG_MB				0x0
+#define NFP_NET_VF_CFG_MB_CAP				0x0
+#define   NFP_NET_VF_CFG_MB_CAP_MAC			  (0x1 << 0)
+#define   NFP_NET_VF_CFG_MB_CAP_VLAN			  (0x1 << 1)
+#define   NFP_NET_VF_CFG_MB_CAP_SPOOF			  (0x1 << 2)
+#define   NFP_NET_VF_CFG_MB_CAP_LINK_STATE		  (0x1 << 3)
+#define   NFP_NET_VF_CFG_MB_CAP_TRUST			  (0x1 << 4)
+#define   NFP_NET_VF_CFG_MB_CAP_VLAN_PROTO		  (0x1 << 5)
+#define   NFP_NET_VF_CFG_MB_CAP_RATE			  (0x1 << 6)
+#define   NFP_NET_VF_CFG_MB_CAP_QUEUE_CONFIG		  (0x1 << 7)
+#define NFP_NET_VF_CFG_MB_RET				0x2
+#define NFP_NET_VF_CFG_MB_UPD				0x4
+#define   NFP_NET_VF_CFG_MB_UPD_MAC			  (0x1 << 0)
+#define   NFP_NET_VF_CFG_MB_UPD_VLAN			  (0x1 << 1)
+#define   NFP_NET_VF_CFG_MB_UPD_SPOOF			  (0x1 << 2)
+#define   NFP_NET_VF_CFG_MB_UPD_LINK_STATE		  (0x1 << 3)
+#define   NFP_NET_VF_CFG_MB_UPD_TRUST			  (0x1 << 4)
+#define   NFP_NET_VF_CFG_MB_UPD_VLAN_PROTO		  (0x1 << 5)
+#define   NFP_NET_VF_CFG_MB_UPD_RATE		  	  (0x1 << 6)
+#define   NFP_NET_VF_CFG_MB_UPD_QUEUE_CONFIG	  	  (0x1 << 7)
+#define NFP_NET_VF_CFG_MB_VF_NUM			0x7
 
 /* Forward declarations */
 struct nfp_cpp;
@@ -115,7 +152,7 @@ struct nfp_nfdk_tx_buf;
 #define D_IDX(ring, idx)	((idx) & ((ring)->cnt - 1))
 
 /* Convenience macro for writing dma address into RX/TX descriptors */
-#define nfp_desc_set_dma_addr(desc, dma_addr)				\
+#define nfp_desc_set_dma_addr_40b(desc, dma_addr)			\
 	do {								\
 		__typeof__(desc) __d = (desc);				\
 		dma_addr_t __addr = (dma_addr);				\
@@ -124,13 +161,13 @@ struct nfp_nfdk_tx_buf;
 		__d->dma_addr_hi = upper_32_bits(__addr) & 0xff;	\
 	} while (0)
 
-#define nfp_nfdk_tx_desc_set_dma_addr(desc, dma_addr)			       \
-	do {								       \
-		__typeof__(desc) __d = (desc);				       \
-		dma_addr_t __addr = (dma_addr);				       \
-									       \
-		__d->dma_addr_hi = cpu_to_le16(upper_32_bits(__addr) & 0xff);  \
-		__d->dma_addr_lo = cpu_to_le32(lower_32_bits(__addr));         \
+#define nfp_desc_set_dma_addr_48b(desc, dma_addr)			\
+	do {								\
+		__typeof__(desc) __d = (desc);				\
+		dma_addr_t __addr = (dma_addr);				\
+									\
+		__d->dma_addr_hi = cpu_to_le16(upper_32_bits(__addr));	\
+		__d->dma_addr_lo = cpu_to_le32(lower_32_bits(__addr));	\
 	} while (0)
 
 /**
@@ -225,8 +262,8 @@ struct nfp_net_tx_ring {
 struct nfp_net_rx_desc {
 	union {
 		struct {
-			u8 dma_addr_hi;	/* High bits of the buf address */
-			__le16 reserved; /* Must be zero */
+			__le16 dma_addr_hi; /* High bits of the buf address */
+			u8 reserved; /* Must be zero */
 			u8 meta_len_dd; /* Must be zero */
 
 			__le32 dma_addr_lo; /* Low bits of the buffer address */
@@ -248,6 +285,8 @@ struct nfp_net_rx_desc {
 };
 
 #define NFP_NET_META_FIELD_MASK GENMASK(NFP_NET_META_FIELD_SIZE - 1, 0)
+#define NFP_NET_VLAN_CTAG	0
+#define NFP_NET_VLAN_STAG	1
 
 struct nfp_meta_parsed {
 	u8 hash_type;
@@ -256,6 +295,11 @@ struct nfp_meta_parsed {
 	u32 mark;
 	u32 portid;
 	__wsum csum;
+	struct {
+		bool stripped;
+		u8 tpid;
+		u16 tci;
+	} vlan;
 };
 
 struct nfp_net_rx_hash {
@@ -627,8 +671,8 @@ struct nfp_net {
 	int stride_rx;
 
 	unsigned int max_r_vecs;
-	struct nfp_net_r_vector r_vecs[NFP_NET_MAX_R_VECS];
-	struct msix_entry irq_entries[NFP_NET_MAX_IRQS];
+	struct nfp_net_r_vector *r_vecs;
+	struct msix_entry *irq_entries;
 
 	irq_handler_t lsc_handler;
 	char lsc_name[IFNAMSIZ + 8];

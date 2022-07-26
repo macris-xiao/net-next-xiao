@@ -28,8 +28,7 @@
 struct nfp_net_vf {
 	struct nfp_net *nn;
 
-	struct msix_entry irq_entries[NFP_NET_NON_Q_VECTORS +
-				      NFP_NET_MAX_TX_RINGS];
+	struct msix_entry *irq_entries;
 	u8 __iomem *q_bar;
 
 	struct dentry *ddir;
@@ -199,6 +198,9 @@ static int nfp_netvf_pci_probe(struct pci_dev *pdev,
 	nn->dp.is_vf = 1;
 	nn->stride_tx = stride;
 	nn->stride_rx = stride;
+
+	vf->irq_entries = kcalloc(NFP_NET_NON_Q_VECTORS + nfp_net_max_tx_rings,
+				  sizeof(*vf->irq_entries), GFP_KERNEL);
 
 	if (rx_bar_no == tx_bar_no) {
 		u32 bar_off, bar_sz;
