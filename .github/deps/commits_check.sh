@@ -154,7 +154,7 @@ for commit in $(git log --oneline --no-color -$ncommits --reverse | cut -d ' ' -
     echo
     echo "----------- Sparse check -------------"
 
-    if ! make -j"$(nproc)" M="$module" C=2 CF=-D__CHECK_ENDIAN__ >& .sparse.log; then
+    if ! PATH=$PATH:./sparse make -j"$(nproc)" M="$module" C=2 CF=-D__CHECK_ENDIAN__ >& .sparse.log; then
         commit_status_set_fail "Sparse exited with non-zero return code"
         cat .sparse.log
     else
