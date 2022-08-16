@@ -129,18 +129,16 @@ for commit in $(git log --oneline --no-color -$ncommits --reverse | cut -d ' ' -
             smatch_count=$(grep "\(warning:\|warn:\|error:\)" .smatch.log | wc -l)
             case $file in
                 drivers/net/ethernet/netronome/nfp/abm/ctrl.c) ;&
-                drivers/net/ethernet/netronome/nfp/abm/qdisc.c) ;&
                 drivers/net/ethernet/netronome/nfp/ccm_mbox.c) ;&
                 drivers/net/ethernet/netronome/nfp/crypto/tls.c) ;&
-                drivers/net/ethernet/netronome/nfp/nfp_net_common.c) ;&
                 drivers/net/ethernet/netronome/nfp/nfp_net_sriov.c) ;&
                 drivers/net/ethernet/netronome/nfp/nfpcore/nfp_cppcore.c)
                     exp_smatch_count=1 ;;
-                drivers/net/ethernet/netronome/nfp/bpf/jit.c) ;&
                 drivers/net/ethernet/netronome/nfp/flower/offload.c)
                     exp_smatch_count=2 ;;
                 drivers/net/ethernet/netronome/nfp/devlink_param.c) ;&
-                drivers/net/ethernet/netronome/nfp/nfp_main.c)
+                drivers/net/ethernet/netronome/nfp/nfp_main.c) ;&
+                drivers/net/ethernet/netronome/nfp/nfp_net_common.c)
                     exp_smatch_count=3 ;;
                 *)
                     exp_smatch_count=0 ;;
