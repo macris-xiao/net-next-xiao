@@ -52,18 +52,12 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
         fetch-depth: ${{ env.COMMIT_CNT }}
 
-    - name: Download sparse
-      uses: ./.github/actions/download
-      with:
-        output-path: ${{ env.DOWNLOAD }}
-        url: "http://deb.debian.org/debian/pool/main/s/sparse/"
-        accept: "sparse_0.6.3-2_amd64.deb"
-
-    - name: Unpack sparse
-      uses: ./.github/actions/unpack-deb
-      with:
-        input-path: ${{ env.DOWNLOAD }}
-        output-path: ${{ env.UNPACKED }}
+    - name: Checkout and Build Sparse
+      run: |
+        git clone --quiet https://git.kernel.org/pub/scm/devel/sparse/sparse.git
+        # Revision of master branch with 'unreplaced' branch mergep
+        (cd sparse && git checkout ce1a6720f69e)
+        make -C ./sparse
 
     - name: Checkout and Build Smatch
       run: |
