@@ -57,12 +57,12 @@ jobs:
         git clone --quiet https://git.kernel.org/pub/scm/devel/sparse/sparse.git
         # Revision of master branch with 'unreplaced' branch mergep
         (cd sparse && git checkout ce1a6720f69e)
-        make -C ./sparse
+        make -j"$(nproc)" -C ./sparse
 
     - name: Checkout and Build Smatch
       run: |
         git clone --quiet --branch 1.73 --depth 1 https://github.com/error27/smatch
-        make -C ./smatch
+        make -j"$(nproc)" -C ./smatch
 
     - name: 64-bit Configure & Build Kernel
       run: |
