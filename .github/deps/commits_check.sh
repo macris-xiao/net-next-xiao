@@ -27,6 +27,9 @@ exp_ccount=1
 exp_scount=0
 module=drivers/net/ethernet/netronome/nfp
 
+# verify that git can run without error
+git status > /dev/null
+
 # If a commit message contains a Fixes tag or mentions a different commit the
 # strict mode of checkpatch.pl will check the tree to make sure that commit
 # exits, as our worktree is shallow this check will fail.

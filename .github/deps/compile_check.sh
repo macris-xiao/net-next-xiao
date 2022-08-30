@@ -10,6 +10,9 @@ fi
 readonly ncommits=$1
 readonly module=drivers/net/ethernet/netronome/nfp
 
+# verify that git can run without error
+git status > /dev/null
+
 for commit in $(git log --oneline --no-color -$ncommits --reverse | cut -d ' ' -f 1); do
     echo "============== Checking $commit ========================"
     git checkout $commit
