@@ -4,7 +4,7 @@ on: [pull_request]
 
 env:
   DOWNLOAD: ".download"
-  MAKEFLAGS: "CC=gcc-10"
+  MAKEFLAGS: "CC=gcc-11"
   UNPACKED: ".unpacked"
 
 jobs:
@@ -34,7 +34,6 @@ jobs:
           build-essential \
           coccinelle \
           flex \
-          gcc-10 \
           libelf-dev \
           libpython2.7 \
           libsqlite3-dev \
