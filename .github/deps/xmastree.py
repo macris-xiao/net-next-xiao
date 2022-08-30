@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # Audit kernel patches or code for "Reverse Christmas Tree" compliance
 #
 # Copyright (c) 2016, Solarflare Communications Ltd.
@@ -135,13 +135,13 @@ def check_file(f):
 
 def report(name, viols):
     if viols:
-        print "xmastree: WARNING: Violation(s) in", name
+        print("xmastree: WARNING: Violation(s) in", name)
         for last, line, li in viols:
-            print "Line %d"%(li-1,)
-            print '\t'+last
-            print '\t'+line
+            print("Line %d"%(li-1,))
+            print('\t'+last)
+            print('\t'+line)
     else:
-        print "xmastree: no problems found in", name
+        print("xmastree: no problems found in", name)
 
 if len(sys.argv) == 1:
     viols = check_file(sys.stdin)
