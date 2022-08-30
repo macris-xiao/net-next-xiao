@@ -13,6 +13,7 @@ jobs:
       - self-hosted
       - builder
       - Ubuntu
+    container: ubuntu:22.04
     name: Patches Check
     steps:
     - name: Get PR info
@@ -24,15 +25,10 @@ jobs:
         COMMIT_CNT=$((${{ steps.get-pr-info.outputs.commits }}+1))
         echo "COMMIT_CNT=${COMMIT_CNT}" >> $GITHUB_ENV
 
-    - name: Add Coccinelle Focal PPA
-      run: |
-        sudo apt-get -q=2 install software-properties-common
-        sudo add-apt-repository ppa:npalix/coccinelle
-        sudo apt-get update
-
     - name: Install deps
       run: |
-        sudo apt-get -q=2 install \
+        apt-get -q=2 update
+        apt-get -q=2 install \
           bc \
           bison \
           build-essential \
@@ -43,14 +39,20 @@ jobs:
           libpython2.7 \
           libsqlite3-dev \
           libssl-dev \
-          python
-        pip3 install ply GitPython
+          python3 \
+          python3-git \
+          python3-ply
 
     - name: Check out repository
       uses: actions/checkout@v2
       with:
         ref: ${{ github.event.pull_request.head.sha }}
         fetch-depth: ${{ env.COMMIT_CNT }}
+
+    # actions/checkout@v2 does set safe.directory but, empirically,
+    # the setting appears to be temporary
+    - name: Set safe.directory
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
     - name: Checkout and Build Sparse
       run: |
