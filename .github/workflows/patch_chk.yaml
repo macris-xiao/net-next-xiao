@@ -54,7 +54,7 @@ jobs:
 
     - name: Checkout and Build Sparse
       run: |
-        git clone --quiet https://git.kernel.org/pub/scm/devel/sparse/sparse.git
+        git clone --quiet https://git.kernel.org/pub/scm/devel/sparse/sparse.git || git clone --quiet https://kernel.googlesource.com/pub/scm/devel/sparse/sparse.git
         # Revision of master branch with 'unreplaced' branch mergep
         (cd sparse && git checkout ce1a6720f69e)
         make -j"$(nproc)" -C ./sparse
