@@ -64,6 +64,10 @@ for commit in $(git log --oneline --no-color -$ncommits --reverse | cut -d ' ' -
     fi
 
     echo "----------- Compile commit ------------"
+    if ! make -s local_defconfig >& .configure.log; then
+        cat .configure.log
+        exit 1
+    fi
     if ! make -s -j"$(nproc)" M="$module" >& .build.log; then
         cat .build.log
         exit 1
