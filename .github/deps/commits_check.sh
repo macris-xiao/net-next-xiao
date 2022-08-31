@@ -119,14 +119,23 @@ for commit in $(git log --oneline --no-color -$ncommits --reverse | cut -d ' ' -
         echo
         echo "----------- Check ($file) ---------"
 
-        # If the change touches nfp_net_debugfs.c but CONFIG_NFP_DEBUG is not
-        # set in the configuration file smatch will exit with an error as there
-        # is no rule to build nfp_net_debugfs.o
-        if [[ "$file" == "drivers/net/ethernet/netronome/nfp/nfp_net_debugfs.c" ]]; then
-            if ! grep -q "CONFIG_NFP_DEBUG=y" .config; then
-                echo "Skip as CONFIG_NFP_DEBUG not set in .config"
-                continue
-            fi
+	# If the change touches files that are not configured to be
+	# compiled then smatch will exit with an error. So skip running
+	# smatch on such files.
+	CHECK_CONFIG=""
+	case $file in
+	    drivers/net/ethernet/netronome/nfp/nfp_net_debugfs.c)
+	        CHECK_CONFIG="CONFIG_NFP_DEBUG"
+	        ;;
+	    drivers/net/ethernet/netronome/nfp/crypto/ipsec.c) ;&
+	    drivers/net/ethernet/netronome/nfp/nfd3/ipsec.c)
+	        CHECK_CONFIG="CONFIG_NFP_NET_IPSEC"
+	        ;;
+	esac
+
+        if [ -n "$CHECK_CONFIG" ] && ! grep -q "${CHECK_CONFIG}=y" .config; then
+            echo "Skip as $CHECK_CONFIG not set in .config"
+            continue
         fi
 
         if ! ./smatch/smatch_scripts/kchecker --spammy "$file" >& .smatch.log; then
