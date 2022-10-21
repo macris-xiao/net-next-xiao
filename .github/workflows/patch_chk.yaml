@@ -16,13 +16,9 @@ jobs:
     container: ubuntu:22.04
     name: Patches Check
     steps:
-    - name: Get PR info
-      id: 'get-pr-info'
-      uses: Brymastr/pr-info-action@v1
-
-    - name: Set env var
+    - name: Get commits count
       run: |
-        COMMIT_CNT=$((${{ steps.get-pr-info.outputs.commits }}+1))
+        COMMIT_CNT=$((${{ github.event.pull_request.commits }}+1))
         echo "COMMIT_CNT=${COMMIT_CNT}" >> $GITHUB_ENV
 
     - name: Install deps
@@ -43,7 +39,7 @@ jobs:
           python3-ply
 
     - name: Check out repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         ref: ${{ github.event.pull_request.head.sha }}
         fetch-depth: ${{ env.COMMIT_CNT }}
@@ -75,14 +71,14 @@ jobs:
       run: |
         cp -p .github/deps/compile_check.sh ./
         export PATH=$PATH:`pwd`/${{ env.UNPACKED }}/usr/bin
-        ./compile_check.sh ${{ steps.get-pr-info.outputs.commits }}
+        ./compile_check.sh ${{ github.event.pull_request.commits }}
 
     - name: Run check scripts
       run: |
         cp -p .github/deps/commits_check.sh ./
         cp -p .github/deps/xmastree.py ./
         export PATH=$PATH:`pwd`/${{ env.UNPACKED }}/usr/bin
-        ./commits_check.sh ${{ steps.get-pr-info.outputs.commits }}
+        ./commits_check.sh ${{ github.event.pull_request.commits }}
 
     - name: 32-bit Configure & Build Kernel
       run: |
@@ -95,7 +91,7 @@ jobs:
       run: |
         cp -p .github/deps/compile_check.sh ./
         export PATH=$PATH:`pwd`/${{ env.UNPACKED }}/usr/bin
-        ./compile_check.sh ${{ steps.get-pr-info.outputs.commits }}
+        ./compile_check.sh ${{ github.event.pull_request.commits }}
 
     - name: Configure with ipv6 disabled & Build Kernel
       run: |
@@ -109,4 +105,4 @@ jobs:
       run: |
         cp -p .github/deps/compile_check.sh ./
         export PATH=$PATH:`pwd`/${{ env.UNPACKED }}/usr/bin
-        ./compile_check.sh ${{ steps.get-pr-info.outputs.commits }}
+        ./compile_check.sh ${{ github.event.pull_request.commits }}
