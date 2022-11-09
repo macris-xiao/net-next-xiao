@@ -647,3 +647,30 @@ int __nfp_eth_set_split(struct nfp_nsp *nsp, unsigned int lanes)
 	return NFP_ETH_SET_BIT_CONFIG(nsp, NSP_ETH_RAW_PORT, NSP_ETH_PORT_LANES,
 				      lanes, NSP_ETH_CTRL_SET_LANES);
 }
+
+int nfp_eth_read_media(struct nfp_cpp *cpp, struct nfp_eth_media_buf *ethm)
+{
+	struct nfp_nsp *nsp;
+	int err;
+
+	nsp = nfp_nsp_open(cpp);
+	if (IS_ERR(nsp)) {
+		err = PTR_ERR(nsp);
+		nfp_err(cpp, "Failed to access the NSP: %d\n", err);
+		return err;
+	}
+
+	if (!nfp_nsp_has_read_media(nsp)) {
+		nfp_err(cpp, "Reading media not supported. Please update flash\n");
+		err = -EOPNOTSUPP;
+		goto exit_close_nsp;
+	}
+
+	err = nfp_nsp_read_media(nsp, ethm, sizeof(*ethm));
+	if (err)
+		nfp_err(cpp, "Reading link modes failed %d\n", err);
+
+exit_close_nsp:
+	nfp_nsp_close(nsp);
+	return err;
+}
