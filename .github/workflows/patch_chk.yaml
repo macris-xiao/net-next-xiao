@@ -106,3 +106,7 @@ jobs:
         cp -p .github/deps/compile_check.sh ./
         export PATH=$PATH:`pwd`/${{ env.UNPACKED }}/usr/bin
         ./compile_check.sh ${{ github.event.pull_request.commits }}
+
+    - name: Cleanup afterwards
+      if: always()
+      run: find -delete
