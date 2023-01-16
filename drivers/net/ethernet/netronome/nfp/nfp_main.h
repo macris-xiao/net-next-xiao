@@ -44,6 +44,16 @@ struct nfp_dumpspec {
 	u8 data[];
 };
 
+enum {
+	NFP_SPEED_1G,
+	NFP_SPEED_10G,
+	NFP_SPEED_25G,
+	NFP_SPEED_40G,
+	NFP_SPEED_50G,
+	NFP_SPEED_100G,
+	NFP_SUP_SPEED_NUMBER
+};
+
 /**
  * struct nfp_pf - NFP PF-specific device structure
  * @pdev:		Backpointer to PCI device
@@ -84,6 +94,7 @@ struct nfp_dumpspec {
  * @port_refresh_work:	Work entry for taking netdevs out
  * @shared_bufs:	Array of shared buffer structures if FW has any SBs
  * @num_shared_bufs:	Number of elements in @shared_bufs
+ * @speed_bitmap:	Supported speed bitmap of pf
  *
  * Fields which may change after proble are protected by devlink instance lock.
  */
@@ -141,6 +152,7 @@ struct nfp_pf {
 
 	struct nfp_shared_buf *shared_bufs;
 	unsigned int num_shared_bufs;
+	DECLARE_BITMAP(speed_bitmap, NFP_SUP_SPEED_NUMBER);
 };
 
 extern struct pci_driver nfp_netvf_pci_driver;
